@@ -1,0 +1,10 @@
+*.make
+Makefile
+objs/
+bin/
+.vs/
+*.sln
+*.vcxproj
+*.filters
+*.user
+
