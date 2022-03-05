@@ -42,25 +42,29 @@ workspace ( "p8" )
     filter ( "configurations:Release" )
       optimize "On"
       defines { "NDEBUG", "_NDEBUG" }
+
+    filter ( "configurations:Debug" )
+      symbols "On"
+      defines { "DEBUG", "_DEBUG" }
+
+    filter ( "action:vs*" )
+      defines { "WIN32", "_WIN32", "_WINDOWS",
+                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
+                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+
+    filter { "action:vs*", "configurations:Release" }
       libdirs { "./libs/sdl2/Release" }
       postbuildcommands {
         "{COPY} ./libs/sdl2/Release/SDL2.dll %{cfg.targetdir}",
         "{COPY} ./libs/sdl2/Release/SDL2.pdb %{cfg.targetdir}"
       }
 
-    filter ( "configurations:Debug" )
-      symbols "On"
-      defines { "DEBUG", "_DEBUG" }
+    filter { "action:vs*", "configurations:Debug" }
       libdirs { "./libs/sdl2/Debug" }
       postbuildcommands {
         "{COPY} ./libs/sdl2/Debug/SDL2.dll %{cfg.targetdir}",
         "{COPY} ./libs/sdl2/Debug/SDL2.pdb %{cfg.targetdir}"
       }
-
-    filter ( "action:vs*" )
-      defines { "WIN32", "_WIN32", "_WINDOWS",
-                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
-                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
