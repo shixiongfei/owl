@@ -11,5 +11,16 @@
 
 #include "p8.h"
 
+int p8_main(int argc, char *argv[]) {
+  if (p8_window_create(800, 600, "P8-2D", 0) < 0)
+    return -1;
 
-const char *p8_version() { return P8_RELEASE; }
+  while (!p8_window_closed()) {
+    p8_window_update();
+  }
+
+  p8_window_destroy();
+  return 0;
+}
+
+int main(int argc, char *argv[]) { return p8_main(argc, argv); }

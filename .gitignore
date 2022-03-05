@@ -7,4 +7,4 @@ bin/
 *.vcxproj
 *.filters
 *.user
-
+libs/
