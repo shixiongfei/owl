@@ -9,6 +9,8 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
+#include "SDL.h"
+
 #include "p8.h"
 
 int p8_main(int argc, char *argv[]) {

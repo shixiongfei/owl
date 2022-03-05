@@ -42,10 +42,20 @@ workspace ( "p8" )
     filter ( "configurations:Release" )
       optimize "On"
       defines { "NDEBUG", "_NDEBUG" }
+      libdirs { "./libs/sdl2/Release" }
+      postbuildcommands {
+        "{COPY} ./libs/sdl2/Release/SDL2.dll %{cfg.targetdir}",
+        "{COPY} ./libs/sdl2/Release/SDL2.pdb %{cfg.targetdir}"
+      }
 
     filter ( "configurations:Debug" )
       symbols "On"
       defines { "DEBUG", "_DEBUG" }
+      libdirs { "./libs/sdl2/Debug" }
+      postbuildcommands {
+        "{COPY} ./libs/sdl2/Debug/SDL2.dll %{cfg.targetdir}",
+        "{COPY} ./libs/sdl2/Debug/SDL2.pdb %{cfg.targetdir}"
+      }
 
     filter ( "action:vs*" )
       defines { "WIN32", "_WIN32", "_WINDOWS",
