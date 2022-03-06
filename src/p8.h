@@ -69,9 +69,6 @@ typedef uint64_t u64;
 typedef intptr_t sword_t;
 typedef uintptr_t uword_t;
 
-#define P8_NOCURSOR 1
-#define P8_FULLSCREEN 2
-
 typedef union p8_Pixel {
   struct {
     u8 r, g, b, a;
@@ -79,15 +76,7 @@ typedef union p8_Pixel {
   u32 rgba;
 } p8_Pixel;
 
-typedef struct p8_Texture p8_Texture;
-
-P8_API int p8_window_create(s32 w, s32 h, const char *title, int flags);
-P8_API void p8_window_destroy(void);
-
-P8_API int p8_window_closed(void);
-P8_API void p8_window_update(void);
-
-P8_API int p8_main(int argc, char *argv[]);
+typedef struct p8_Canvas p8_Canvas;
 
 #ifdef __cplusplus
 };
