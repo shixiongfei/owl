@@ -16,6 +16,7 @@
 typedef struct p8_Window {
   SDL_Window *window;
   SDL_Renderer *renderer;
+  SDL_Texture *screen;
   u8 quit;
 } p8_Window;
 
@@ -29,13 +30,17 @@ static int p8_init(p8_Window *app, s32 w, s32 h, const char *title, int flags) {
   if (!app->window)
     return -1;
 
-  app->renderer = SDL_CreateRenderer(app->window, -1, SDL_RENDERER_ACCELERATED);
+  app->renderer = SDL_CreateRenderer(
+      app->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
 
   if (!app->renderer)
     return -1;
 
   SDL_DisableScreenSaver();
   app->quit = 0;
+
+  app->screen = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA8888,
+                                  SDL_TEXTUREACCESS_TARGET, w, h);
 
   return 0;
 }
@@ -69,11 +74,21 @@ static void p8_input(p8_Window *app) {
 }
 
 static void p8_update(p8_Window *app) {
-  SDL_SetRenderDrawColor(app->renderer, 0x00, 0x00, 0x00, 0xff);
+  SDL_SetRenderTarget(app->renderer, app->screen);
+
+  SDL_SetRenderDrawColor(app->renderer, 0x00, 0x00, 0x00, 0x00);
   SDL_RenderClear(app->renderer);
 
-  // logic
+  SDL_Rect r = {100, 100, 100, 100};
 
+  SDL_SetRenderDrawColor(app->renderer, 0x00, 0xFF, 0x00, 0x00);
+  SDL_RenderFillRect(app->renderer, &r);
+
+  SDL_SetRenderDrawColor(app->renderer, 0xFF, 0x00, 0x00, 0x00);
+  SDL_RenderDrawRect(app->renderer, &r);
+
+  SDL_SetRenderTarget(app->renderer, NULL);
+  SDL_RenderCopy(app->renderer, app->screen, NULL, NULL);
   SDL_RenderPresent(app->renderer);
   SDL_Delay(16);
 }
