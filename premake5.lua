@@ -71,6 +71,10 @@ workspace ( "p8" )
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
+      linkoptions { "-rpath @executable_path" }
+      postbuildcommands {
+        "{COPY} ./libs/libSDL2.dylib %{cfg.targetdir}",
+      }
 
     filter { "action:gmake", "system:linux" }
       defines { "__linux__" }
