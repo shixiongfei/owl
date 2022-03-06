@@ -15,7 +15,7 @@
 #define SCREEN_H 600
 #define SCREEN_FPS 60
 
-int main(int argc, char *argv[]) {
+int p8_main(int argc, char *argv[]) {
   p8_Canvas *screen;
 
   if (!p8_init(SCREEN_W, SCREEN_H, "Think Pixels", SCREEN_FPS, 0))

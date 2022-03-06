@@ -220,3 +220,6 @@ void p8_fillroundedrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h, s32 rad,
     roundedBoxRGBA(app->renderer, x, y, x + w, y + h, rad, color.r, color.g,
                    color.b, color.a);
 }
+
+extern int p8_main(int argc, char *argv[]);
+int main(int argc, char *argv[]) { return p8_main(argc, argv); }
