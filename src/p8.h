@@ -12,6 +12,7 @@
 #ifndef __P8_H__
 #define __P8_H__
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -76,7 +77,63 @@ typedef union p8_Pixel {
   u32 rgba;
 } p8_Pixel;
 
-typedef struct p8_Canvas p8_Canvas;
+typedef struct SDL_Surface p8_Image;
+typedef struct SDL_Texture p8_Canvas;
+
+P8_API bool p8_init(s32 w, s32 h, const char *title, s32 fps, s32 flags);
+P8_API void p8_quit(void);
+P8_API bool p8_closed(void);
+P8_API void p8_events(void);
+P8_API void p8_update(p8_Canvas *screen);
+
+P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
+P8_API void p8_destroy(p8_Canvas *canvas);
+
+P8_API p8_Pixel p8_rgb(u8 r, u8 g, u8 b);
+P8_API p8_Pixel p8_rgba(u8 r, u8 g, u8 b, u8 a);
+
+P8_API void p8_clear(p8_Canvas *canvas, p8_Pixel color);
+P8_API void p8_pixel(p8_Canvas *canvas, s32 x, s32 y, p8_Pixel color);
+
+P8_API void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                    p8_Pixel color);
+P8_API void p8_aaline(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                      p8_Pixel color);
+P8_API void p8_thickline(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                         s32 width, p8_Pixel color);
+P8_API void p8_arc();
+
+P8_API void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h,
+                    p8_Pixel color);
+P8_API void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h,
+                        p8_Pixel color);
+
+P8_API void p8_roundedrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h,
+                           s32 rad, p8_Pixel color);
+P8_API void p8_fillroundedrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h,
+                               s32 rad, p8_Pixel color);
+
+P8_API void p8_circle();
+P8_API void p8_aacircle();
+P8_API void p8_fillcircle();
+
+P8_API void p8_ellipse();
+P8_API void p8_aaellipse();
+P8_API void p8_fillellipse();
+
+P8_API void p8_pie();
+P8_API void p8_fillpie();
+
+P8_API void p8_trigon();
+P8_API void p8_aatrigon();
+P8_API void p8_filltrigon();
+
+P8_API void p8_polygon();
+P8_API void p8_aapolygon();
+P8_API void p8_fillpolygon();
+
+P8_API void p8_bezier();
+P8_API void p8_imagepolygon();
 
 #ifdef __cplusplus
 };
