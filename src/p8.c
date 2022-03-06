@@ -10,14 +10,18 @@
  */
 
 #include "SDL.h"
+#include "SDL2_framerate.h"
 
 #include "p8.h"
 
+#define P8_FPS 60
+
 typedef struct p8_Window {
+  u8 quit;
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *screen;
-  u8 quit;
+  FPSmanager fps;
 } p8_Window;
 
 static int p8_init(p8_Window *app, s32 w, s32 h, const char *title, int flags) {
@@ -35,6 +39,9 @@ static int p8_init(p8_Window *app, s32 w, s32 h, const char *title, int flags) {
 
   if (!app->renderer)
     return -1;
+
+  SDL_initFramerate(&app->fps);
+  SDL_setFramerate(&app->fps, P8_FPS);
 
   SDL_DisableScreenSaver();
   app->quit = 0;
@@ -74,6 +81,8 @@ static void p8_input(p8_Window *app) {
 }
 
 static void p8_update(p8_Window *app) {
+  u32 elapsed;
+
   SDL_SetRenderTarget(app->renderer, app->screen);
 
   SDL_SetRenderDrawColor(app->renderer, 0x00, 0x00, 0x00, 0x00);
@@ -90,7 +99,8 @@ static void p8_update(p8_Window *app) {
   SDL_SetRenderTarget(app->renderer, NULL);
   SDL_RenderCopy(app->renderer, app->screen, NULL, NULL);
   SDL_RenderPresent(app->renderer);
-  SDL_Delay(16);
+
+  elapsed = SDL_framerateDelay(&app->fps);
 }
 
 int main(int argc, char *argv[]) {
