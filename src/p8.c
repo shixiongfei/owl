@@ -10,25 +10,39 @@
  */
 
 #include "SDL.h"
-#include "SDL2_framerate.h"
-#include "SDL2_gfxPrimitives.h"
 
 #include "p8.h"
 
-#define P8_FPS 60
+#define P8_FPS_UPPER_LIMIT 200
+#define P8_FPS_LOWER_LIMIT 1
+#define P8_FPS_DEFAULT 60
+
 #define P8_PIXELFORMAT SDL_PIXELFORMAT_RGBA8888
 
 typedef struct p8_Window {
   bool quit;
+
   SDL_Window *window;
   SDL_Renderer *renderer;
-  FPSmanager fps;
+
+  u32 rate;
+  u32 framecount;
+  f32 rateticks;
+  u64 baseticks;
+  u64 lastticks;
 } p8_Window;
 
 static p8_Window p8_app = {0};
 static p8_Window *app = &p8_app;
 
-bool p8_init(s16 w, s16 h, const char *title, s32 flags) {
+u64 p8_ticks(void) {
+  u64 ticks = SDL_GetTicks64();
+  return ticks > 0 ? ticks : 1;
+}
+
+void p8_sleep(u32 ms) { SDL_Delay(ms); }
+
+bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
   s32 x, y, window_flags, renderer_flags;
 
   x = SDL_WINDOWPOS_CENTERED;
@@ -37,7 +51,7 @@ bool p8_init(s16 w, s16 h, const char *title, s32 flags) {
   window_flags = SDL_WINDOW_ALLOW_HIGHDPI;
   renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
 
-  if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
     p8_quit();
     return false;
   }
@@ -56,11 +70,14 @@ bool p8_init(s16 w, s16 h, const char *title, s32 flags) {
     return false;
   }
 
-  SDL_initFramerate(&app->fps);
-  SDL_setFramerate(&app->fps, P8_FPS);
-
   SDL_DisableScreenSaver();
   app->quit = 0;
+
+  app->framecount = 0;
+  app->rate = P8_FPS_DEFAULT;
+  app->rateticks = 1000.0f / (f32)P8_FPS_DEFAULT;
+  app->baseticks = p8_ticks();
+  app->lastticks = app->baseticks;
 
   return true;
 }
@@ -84,9 +101,6 @@ bool p8_closed(void) { return app->quit; }
 void p8_events(void) {
   SDL_Event event;
 
-  if (!app->window)
-    return;
-
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
     case SDL_QUIT:
@@ -99,206 +113,93 @@ void p8_events(void) {
 }
 
 void p8_update(p8_Canvas *screen) {
-  if (!app->renderer)
-    return;
-
   SDL_SetRenderTarget(app->renderer, NULL);
   SDL_RenderCopy(app->renderer, screen, NULL, NULL);
   SDL_RenderPresent(app->renderer);
 }
 
-bool p8_setfps(u8 fps) { return 0 == SDL_setFramerate(&app->fps, fps); }
+bool p8_setfps(u32 rate) {
+  if (rate < P8_FPS_LOWER_LIMIT || rate > P8_FPS_UPPER_LIMIT)
+    return false;
 
-u8 p8_getfps(void) { return (u8)SDL_getFramerate(&app->fps); }
+  app->framecount = 0;
+  app->rate = rate;
+  app->rateticks = 1000.0f / (f32)rate;
 
-u32 p8_wait(void) { return SDL_framerateDelay(&app->fps); }
+  return true;
+}
 
-p8_Canvas *p8_canvas(s16 w, s16 h) {
+u32 p8_getfps(void) { return app->rate; }
+
+u32 p8_wait(void) {
+  u64 current_ticks;
+  u64 target_ticks;
+  u32 time_passed;
+
+  app->framecount += 1;
+
+  current_ticks = p8_ticks();
+  time_passed = (u32)(current_ticks - app->lastticks);
+
+  app->lastticks = current_ticks;
+
+  target_ticks = app->baseticks + (u64)((f32)app->framecount * app->rateticks);
+
+  if (current_ticks <= target_ticks)
+    p8_sleep(target_ticks - current_ticks);
+  else {
+    app->framecount = 0;
+    app->baseticks = p8_ticks();
+  }
+
+  return time_passed;
+}
+
+p8_Canvas *p8_canvas(s32 w, s32 h) {
   s32 texture_access = SDL_TEXTUREACCESS_TARGET;
-
-  if (!app->renderer)
-    return NULL;
-
   return SDL_CreateTexture(app->renderer, P8_PIXELFORMAT, texture_access, w, h);
 }
 
 void p8_destroy(p8_Canvas *canvas) { SDL_DestroyTexture(canvas); }
 
-static bool p8_target(p8_Window *app, p8_Canvas *canvas) {
-  if (!app->renderer)
-    return false;
-
+void p8_clear(p8_Canvas *canvas) {
   SDL_SetRenderTarget(app->renderer, canvas);
-  return true;
+  SDL_RenderClear(app->renderer);
 }
 
-void p8_clear(p8_Canvas *canvas, p8_Pixel color) {
-  if (p8_target(app, canvas)) {
-    SDL_SetRenderDrawColor(app->renderer, color.r, color.g, color.b, color.a);
-    SDL_RenderClear(app->renderer);
-  }
+void p8_color(p8_Canvas *canvas, p8_Pixel color) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_SetRenderDrawColor(app->renderer, color.r, color.g, color.b, color.a);
 }
 
-void p8_pixel(p8_Canvas *canvas, s16 x, s16 y, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    pixelRGBA(app->renderer, x, y, color.r, color.g, color.b, color.a);
+void p8_pixel(p8_Canvas *canvas, s32 x, s32 y) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderDrawPoint(app->renderer, x, y);
 }
 
-void p8_line(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2,
-             p8_Pixel color) {
-  if (p8_target(app, canvas))
-    lineRGBA(app->renderer, x1, y1, x2, y2, color.r, color.g, color.b, color.a);
+void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderDrawPoints(app->renderer, (const SDL_Point *)points, n);
 }
 
-void p8_aaline(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2,
-               p8_Pixel color) {
-  if (p8_target(app, canvas))
-    aalineRGBA(app->renderer, x1, y1, x2, y2, color.r, color.g, color.b,
-               color.a);
+void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderDrawLine(app->renderer, x1, y1, x2, y2);
 }
 
-void p8_thickline(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2, u8 width,
-                  p8_Pixel color) {
-  if (p8_target(app, canvas))
-    thickLineRGBA(app->renderer, x1, y1, x2, y2, width, color.r, color.g,
-                  color.b, color.a);
+void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderDrawLines(app->renderer, (const SDL_Point *)points, n);
 }
 
-void p8_arc(p8_Canvas *canvas, s16 x, s16 y, s16 rad, s16 start, s16 end,
-  p8_Pixel color) {
-  if (p8_target(app, canvas))
-    arcRGBA(app->renderer, x, y, rad, start, end, color.r, color.g, color.b,
-            color.a);
+void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderDrawRects(app->renderer, (const SDL_Rect *)rects, n);
 }
 
-void p8_rect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    rectangleRGBA(app->renderer, x, y, x + w, y + h, color.r, color.g, color.b,
-                  color.a);
-}
-
-void p8_fillrect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h,
-                 p8_Pixel color) {
-  if (p8_target(app, canvas))
-    boxRGBA(app->renderer, x, y, x + w, y + h, color.r, color.g, color.b,
-            color.a);
-}
-
-void p8_roundedrect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h, s16 rad,
-                    p8_Pixel color) {
-  if (p8_target(app, canvas))
-    roundedRectangleRGBA(app->renderer, x, y, x + w, y + h, rad, color.r,
-                         color.g, color.b, color.a);
-}
-
-void p8_fillroundedrect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h, s16 rad,
-                        p8_Pixel color) {
-  if (p8_target(app, canvas))
-    roundedBoxRGBA(app->renderer, x, y, x + w, y + h, rad, color.r, color.g,
-                   color.b, color.a);
-}
-
-void p8_circle(p8_Canvas *canvas, s16 x, s16 y, s16 rad, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    circleRGBA(app->renderer, x, y, rad, color.r, color.g, color.b, color.a);
-}
-
-void p8_aacircle(p8_Canvas *canvas, s16 x, s16 y, s16 rad, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    aacircleRGBA(app->renderer, x, y, rad, color.r, color.g, color.b, color.a);
-}
-
-void p8_fillcircle(p8_Canvas *canvas, s16 x, s16 y, s16 rad, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    filledCircleRGBA(app->renderer, x, y, rad, color.r, color.g, color.b,
-                     color.a);
-}
-
-void p8_ellipse(p8_Canvas *canvas, s16 x, s16 y, s16 rx, s16 ry,
-                p8_Pixel color) {
-  if (p8_target(app, canvas))
-    ellipseRGBA(app->renderer, x, y, rx, ry, color.r, color.g, color.b,
-                color.a);
-}
-
-void p8_aaellipse(p8_Canvas *canvas, s16 x, s16 y, s16 rx, s16 ry,
-                  p8_Pixel color) {
-  if (p8_target(app, canvas))
-    aaellipseRGBA(app->renderer, x, y, rx, ry, color.r, color.g, color.b,
-                  color.a);
-}
-
-void p8_fillellipse(p8_Canvas *canvas, s16 x, s16 y, s16 rx, s16 ry,
-                    p8_Pixel color) {
-  if (p8_target(app, canvas))
-    filledEllipseRGBA(app->renderer, x, y, rx, ry, color.r, color.g, color.b,
-                      color.a);
-}
-
-void p8_pie(p8_Canvas *canvas, s16 x, s16 y, s16 rad, s16 start, s16 end,
-            p8_Pixel color) {
-  if (p8_target(app, canvas))
-    pieRGBA(app->renderer, x, y, rad, start, end, color.r, color.g, color.b,
-            color.a);
-}
-
-void p8_fillpie(p8_Canvas *canvas, s16 x, s16 y, s16 rad, s16 start, s16 end,
-                p8_Pixel color) {
-  if (p8_target(app, canvas))
-    filledPieRGBA(app->renderer, x, y, rad, start, end, color.r, color.g,
-                  color.b, color.a);
-}
-
-void p8_trigon(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2, s16 x3,
-               s16 y3, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    trigonRGBA(app->renderer, x1, y1, x2, y2, x3, y3, color.r, color.g, color.b,
-               color.a);
-}
-
-void p8_aatrigon(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2, s16 x3,
-                 s16 y3, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    aatrigonRGBA(app->renderer, x1, y1, x2, y2, x3, y3, color.r, color.g,
-                 color.b, color.a);
-}
-
-void p8_filltrigon(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2, s16 x3,
-                   s16 y3, p8_Pixel color) {
-  if (p8_target(app, canvas))
-    filledTrigonRGBA(app->renderer, x1, y1, x2, y2, x3, y3, color.r, color.g,
-                     color.b, color.a);
-}
-
-void p8_polygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n,
-                p8_Pixel color) {
-  if (p8_target(app, canvas))
-    polygonRGBA(app->renderer, vx, vy, n, color.r, color.g, color.b, color.a);
-}
-
-void p8_aapolygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n,
-                  p8_Pixel color) {
-  if (p8_target(app, canvas))
-    aapolygonRGBA(app->renderer, vx, vy, n, color.r, color.g, color.b, color.a);
-}
-
-void p8_fillpolygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n,
-                    p8_Pixel color) {
-  if (p8_target(app, canvas))
-    filledPolygonRGBA(app->renderer, vx, vy, n, color.r, color.g, color.b,
-                      color.a);
-}
-
-void p8_bezier(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n, s32 s,
-               p8_Pixel color) {
-  if (p8_target(app, canvas))
-    bezierRGBA(app->renderer, vx, vy, n, s, color.r, color.g, color.b, color.a);
-}
-
-void p8_imagepolygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n,
-                     p8_Image *image, s32 dx, s32 dy) {
-  if (p8_target(app, canvas))
-    texturedPolygon(app->renderer, vx, vy, n, image, dx, dy);
+void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderFillRects(app->renderer, (const SDL_Rect *)rects, n);
 }
 
 extern int p8_main(int argc, char *argv[]);

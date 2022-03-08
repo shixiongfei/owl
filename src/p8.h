@@ -73,6 +73,9 @@ typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
+typedef float f32;
+typedef double f64;
+
 typedef intptr_t sword_t;
 typedef uintptr_t uword_t;
 
@@ -82,6 +85,15 @@ typedef union p8_Pixel {
   };
   u32 rgba;
 } p8_Pixel;
+
+typedef struct p8_Point {
+  s32 x, y;
+} p8_Point;
+
+typedef struct p8_Rect {
+  s32 x, y;
+  s32 w, h;
+} p8_Rect;
 
 typedef struct SDL_Surface p8_Image;
 typedef struct SDL_Texture p8_Canvas;
@@ -96,79 +108,33 @@ P8_INLINE p8_Pixel p8_rgba(u8 r, u8 g, u8 b, u8 a) {
   return p;
 }
 
-P8_API bool p8_init(s16 w, s16 h, const char *title, s32 flags);
+P8_API u64 p8_ticks(void);
+P8_API void p8_sleep(u32 ms);
+
+P8_API bool p8_init(s32 w, s32 h, const char *title, s32 flags);
 P8_API void p8_quit(void);
 P8_API bool p8_closed(void);
 P8_API void p8_events(void);
 P8_API void p8_update(p8_Canvas *screen);
 
-P8_API bool p8_setfps(u8 fps);
-P8_API u8 p8_getfps(void);
+P8_API bool p8_setfps(u32 rate);
+P8_API u32 p8_getfps(void);
 P8_API u32 p8_wait(void);
 
-P8_API p8_Canvas *p8_canvas(s16 w, s16 h);
+P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
 P8_API void p8_destroy(p8_Canvas *canvas);
 
-P8_API void p8_clear(p8_Canvas *canvas, p8_Pixel color);
-P8_API void p8_pixel(p8_Canvas *canvas, s16 x, s16 y, p8_Pixel color);
+P8_API void p8_clear(p8_Canvas *canvas);
+P8_API void p8_color(p8_Canvas *canvas, p8_Pixel color);
 
-P8_API void p8_line(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2,
-                    p8_Pixel color);
-P8_API void p8_aaline(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2,
-                      p8_Pixel color);
-P8_API void p8_thickline(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2,
-                         u8 width, p8_Pixel color);
+P8_API void p8_pixel(p8_Canvas *canvas, s32 x, s32 y);
+P8_API void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n);
 
-P8_API void p8_arc(p8_Canvas *canvas, s16 x, s16 y, s16 rad, s16 start, s16 end,
-                   p8_Pixel color);
+P8_API void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2);
+P8_API void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n);
 
-P8_API void p8_rect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h,
-                    p8_Pixel color);
-P8_API void p8_fillrect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h,
-                        p8_Pixel color);
-
-P8_API void p8_roundedrect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h,
-                           s16 rad, p8_Pixel color);
-P8_API void p8_fillroundedrect(p8_Canvas *canvas, s16 x, s16 y, s16 w, s16 h,
-                               s16 rad, p8_Pixel color);
-
-P8_API void p8_circle(p8_Canvas *canvas, s16 x, s16 y, s16 rad, p8_Pixel color);
-P8_API void p8_aacircle(p8_Canvas *canvas, s16 x, s16 y, s16 rad,
-                        p8_Pixel color);
-P8_API void p8_fillcircle(p8_Canvas *canvas, s16 x, s16 y, s16 rad,
-                          p8_Pixel color);
-
-P8_API void p8_ellipse(p8_Canvas *canvas, s16 x, s16 y, s16 rx, s16 ry,
-                       p8_Pixel color);
-P8_API void p8_aaellipse(p8_Canvas *canvas, s16 x, s16 y, s16 rx, s16 ry,
-                         p8_Pixel color);
-P8_API void p8_fillellipse(p8_Canvas *canvas, s16 x, s16 y, s16 rx, s16 ry,
-                           p8_Pixel color);
-
-P8_API void p8_pie(p8_Canvas *canvas, s16 x, s16 y, s16 rad, s16 start, s16 end,
-                   p8_Pixel color);
-P8_API void p8_fillpie(p8_Canvas *canvas, s16 x, s16 y, s16 rad, s16 start,
-                       s16 end, p8_Pixel color);
-
-P8_API void p8_trigon(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2, s16 x3,
-                      s16 y3, p8_Pixel color);
-P8_API void p8_aatrigon(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2,
-                        s16 x3, s16 y3, p8_Pixel color);
-P8_API void p8_filltrigon(p8_Canvas *canvas, s16 x1, s16 y1, s16 x2, s16 y2,
-                          s16 x3, s16 y3, p8_Pixel color);
-
-P8_API void p8_polygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n,
-                       p8_Pixel color);
-P8_API void p8_aapolygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n,
-                         p8_Pixel color);
-P8_API void p8_fillpolygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy,
-                           s32 n, p8_Pixel color);
-
-P8_API void p8_bezier(p8_Canvas *canvas, const s16 *vx, const s16 *vy, s32 n,
-                      s32 s, p8_Pixel color);
-
-P8_API void p8_imagepolygon(p8_Canvas *canvas, const s16 *vx, const s16 *vy,
-                            s32 n, p8_Image *image, s32 dx, s32 dy);
+P8_API void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
+P8_API void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
 
 #ifdef __cplusplus
 };
