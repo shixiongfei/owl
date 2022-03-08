@@ -139,6 +139,10 @@ P8_API void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
 P8_API void p8_fillrect(p8_Canvas *canvas, const p8_Rect *rect);
 P8_API void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
 
+P8_API void p8_clip(p8_Canvas *canvas, const p8_Rect *rect);
+P8_API void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
+                    const p8_Rect *dstrect);
+
 #ifdef __cplusplus
 };
 #endif

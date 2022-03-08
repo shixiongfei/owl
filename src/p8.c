@@ -212,5 +212,17 @@ void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
   SDL_RenderFillRects(app->renderer, (const SDL_Rect *)rects, n);
 }
 
+void p8_clip(p8_Canvas *canvas, const p8_Rect *rect) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderSetClipRect(app->renderer, (const SDL_Rect *)rect);
+}
+
+void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
+             const p8_Rect *dstrect) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderCopy(app->renderer, src, (const SDL_Rect *)srcrect,
+                 (const SDL_Rect *)dstrect);
+}
+
 extern int p8_main(int argc, char *argv[]);
 int main(int argc, char *argv[]) { return p8_main(argc, argv); }
