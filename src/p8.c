@@ -192,9 +192,19 @@ void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n) {
   SDL_RenderDrawLines(app->renderer, (const SDL_Point *)points, n);
 }
 
+void p8_rect(p8_Canvas *canvas, const p8_Rect *rect) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderDrawRect(app->renderer, (const SDL_Rect *)rect);
+}
+
 void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
   SDL_SetRenderTarget(app->renderer, canvas);
   SDL_RenderDrawRects(app->renderer, (const SDL_Rect *)rects, n);
+}
+
+void p8_fillrect(p8_Canvas *canvas, const p8_Rect *rect) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderFillRect(app->renderer, (const SDL_Rect *)rect);
 }
 
 void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
