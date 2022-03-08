@@ -13,12 +13,11 @@
 
 #define SCREEN_W 800
 #define SCREEN_H 600
-#define SCREEN_FPS 60
 
 int p8_main(int argc, char *argv[]) {
   p8_Canvas *screen;
 
-  if (!p8_init(SCREEN_W, SCREEN_H, "Think Pixels", SCREEN_FPS, 0))
+  if (!p8_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
     return -1;
 
   screen = p8_canvas(SCREEN_W, SCREEN_H);
@@ -42,6 +41,7 @@ int p8_main(int argc, char *argv[]) {
     p8_roundedrect(screen, 50, 50, 100, 100, 10, p8_rgb(0xff, 0, 0));
 
     p8_update(screen);
+    p8_wait();
   }
 
   p8_destroy(screen);

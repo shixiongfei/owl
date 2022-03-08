@@ -34,6 +34,12 @@
 
 #define P8_API extern
 
+#ifdef _MSC_VER
+#define P8_INLINE static __forceinline
+#else
+#define P8_INLINE static inline
+#endif
+
 #if defined(_WIN32)
 #define P8_WINDOWS 1
 #elif defined(__APPLE__)
@@ -80,17 +86,28 @@ typedef union p8_Pixel {
 typedef struct SDL_Surface p8_Image;
 typedef struct SDL_Texture p8_Canvas;
 
-P8_API bool p8_init(s32 w, s32 h, const char *title, s32 fps, s32 flags);
+P8_INLINE p8_Pixel p8_rgb(u8 r, u8 g, u8 b) {
+  p8_Pixel p = {r, g, b, 0xFF};
+  return p;
+}
+
+P8_INLINE p8_Pixel p8_rgba(u8 r, u8 g, u8 b, u8 a) {
+  p8_Pixel p = {r, g, b, a};
+  return p;
+}
+
+P8_API bool p8_init(s32 w, s32 h, const char *title, s32 flags);
 P8_API void p8_quit(void);
 P8_API bool p8_closed(void);
 P8_API void p8_events(void);
 P8_API void p8_update(p8_Canvas *screen);
 
+P8_API bool p8_setfps(u32 fps);
+P8_API u32 p8_getfps(void);
+P8_API u32 p8_wait(void);
+
 P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
 P8_API void p8_destroy(p8_Canvas *canvas);
-
-P8_API p8_Pixel p8_rgb(u8 r, u8 g, u8 b);
-P8_API p8_Pixel p8_rgba(u8 r, u8 g, u8 b, u8 a);
 
 P8_API void p8_clear(p8_Canvas *canvas, p8_Pixel color);
 P8_API void p8_pixel(p8_Canvas *canvas, s32 x, s32 y, p8_Pixel color);
