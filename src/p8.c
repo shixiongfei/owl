@@ -146,7 +146,7 @@ u32 p8_wait(void) {
   target_ticks = app->baseticks + (u64)((f32)app->framecount * app->rateticks);
 
   if (current_ticks <= target_ticks)
-    p8_sleep(target_ticks - current_ticks);
+    p8_sleep((u32)(target_ticks - current_ticks));
   else {
     app->framecount = 0;
     app->baseticks = p8_ticks();
