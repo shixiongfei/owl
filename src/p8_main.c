@@ -20,6 +20,7 @@ int p8_main(int argc, char *argv[]) {
   p8_Point lines[4] = {{320, 200}, {300, 240}, {340, 240}, {320, 200}};
   p8_Rect rect = {150, 150, 100, 50};
   p8_Rect rects[2] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
+  p8_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
 
   if (!p8_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
     return -1;
@@ -49,7 +50,10 @@ int p8_main(int argc, char *argv[]) {
     p8_rects(screen, &rect, 1);
     p8_fillrects(screen, rects, 2);
 
-    p8_update(screen);
+    p8_color(screen, p8_rgba(0, 0xff, 0, 0x5f));
+    p8_fillrects(screen, rects1, 2);
+
+    p8_present(screen);
     p8_wait();
   }
 

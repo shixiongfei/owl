@@ -115,7 +115,7 @@ P8_API bool p8_init(s32 w, s32 h, const char *title, s32 flags);
 P8_API void p8_quit(void);
 P8_API bool p8_closed(void);
 P8_API void p8_events(void);
-P8_API void p8_update(p8_Canvas *screen);
+P8_API void p8_present(p8_Canvas *screen);
 
 P8_API bool p8_setfps(u32 rate);
 P8_API u32 p8_getfps(void);

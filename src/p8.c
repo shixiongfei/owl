@@ -70,6 +70,7 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
     return false;
   }
 
+  SDL_SetRenderDrawBlendMode(app->renderer, SDL_BLENDMODE_BLEND);
   SDL_DisableScreenSaver();
   app->quit = 0;
 
@@ -112,7 +113,7 @@ void p8_events(void) {
   }
 }
 
-void p8_update(p8_Canvas *screen) {
+void p8_present(p8_Canvas *screen) {
   SDL_SetRenderTarget(app->renderer, NULL);
   SDL_RenderCopy(app->renderer, screen, NULL, NULL);
   SDL_RenderPresent(app->renderer);
@@ -157,7 +158,14 @@ u32 p8_wait(void) {
 
 p8_Canvas *p8_canvas(s32 w, s32 h) {
   s32 texture_access = SDL_TEXTUREACCESS_TARGET;
-  return SDL_CreateTexture(app->renderer, P8_PIXELFORMAT, texture_access, w, h);
+  p8_Canvas *canvas= SDL_CreateTexture(app->renderer, P8_PIXELFORMAT, texture_access, w, h);
+
+  if (!canvas)
+    return NULL;
+
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+
+  return canvas;
 }
 
 void p8_destroy(p8_Canvas *canvas) { SDL_DestroyTexture(canvas); }
