@@ -222,7 +222,7 @@ p8_Canvas *p8_load(const char *filename) {
 p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
   p8_Canvas *canvas;
   s32 w, h, format;
-  u8 *data = stbi_load(filename, &w, &h, &format, STBI_rgb_alpha);
+  u8 *data = stbi_load(filename, &w, &h, &format, STBI_rgb);
 
   if (!data)
     return NULL;
