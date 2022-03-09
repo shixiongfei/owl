@@ -9,9 +9,10 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
+#include "SDL.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "SDL.h"
 
 #include "p8.h"
 
@@ -162,8 +163,9 @@ u32 p8_wait(void) {
 }
 
 p8_Canvas *p8_canvas(s32 w, s32 h) {
-  s32 texture_access = SDL_TEXTUREACCESS_TARGET;
-  p8_Canvas *canvas= SDL_CreateTexture(app->renderer, P8_PIXELFORMAT, texture_access, w, h);
+  s32 format = P8_PIXELFORMAT;
+  s32 access = SDL_TEXTUREACCESS_TARGET;
+  p8_Canvas *canvas = SDL_CreateTexture(app->renderer, format, access, w, h);
 
   if (!canvas)
     return NULL;
@@ -195,10 +197,10 @@ static p8_Canvas *p8_tocanvas(p8_Image *image) {
 
 p8_Canvas *p8_image(s32 w, s32 h, const u8 *data, s32 format) {
   p8_Image *image = p8_toimage(w, h, data, format);
-  
+
   if (!image)
     return NULL;
-  
+
   return p8_tocanvas(image);
 }
 
