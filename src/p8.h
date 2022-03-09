@@ -95,7 +95,9 @@ typedef struct p8_Rect {
   s32 w, h;
 } p8_Rect;
 
-typedef struct SDL_Surface p8_Image;
+#define P8_FORMAT_RGB 3
+#define P8_FORMAT_RGBA 4
+
 typedef struct SDL_Texture p8_Canvas;
 
 P8_INLINE p8_Pixel p8_rgb(u8 r, u8 g, u8 b) {
@@ -122,6 +124,10 @@ P8_API u32 p8_getfps(void);
 P8_API u32 p8_wait(void);
 
 P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
+P8_API p8_Canvas *p8_image(s32 w, s32 h, const u8 *data, s32 format);
+P8_API p8_Canvas *p8_imagex(s32 w, s32 h, const u8 *data, p8_Pixel colorkey);
+P8_API p8_Canvas *p8_load(const char *filename);
+P8_API p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey);
 P8_API void p8_destroy(p8_Canvas *canvas);
 
 P8_API void p8_clear(p8_Canvas *canvas);

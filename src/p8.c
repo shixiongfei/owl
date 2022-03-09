@@ -9,6 +9,8 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include "SDL.h"
 
 #include "p8.h"
@@ -18,6 +20,8 @@
 #define P8_FPS_DEFAULT 60
 
 #define P8_PIXELFORMAT SDL_PIXELFORMAT_RGBA8888
+
+typedef struct SDL_Surface p8_Image;
 
 typedef struct p8_Window {
   bool quit;
@@ -164,6 +168,68 @@ p8_Canvas *p8_canvas(s32 w, s32 h) {
     return NULL;
 
   SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+
+  return canvas;
+}
+
+static p8_Image *p8_toimage(s32 w, s32 h, void *data, s32 format) {
+  s32 d = format * 8;
+  s32 p = format * w;
+  s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
+                                    : SDL_PIXELFORMAT_RGBA32;
+  return SDL_CreateRGBSurfaceWithFormatFrom(data, w, h, d, p, f);
+}
+
+static p8_Canvas *p8_tocanvas(p8_Image *image) {
+  p8_Canvas *canvas = SDL_CreateTextureFromSurface(app->renderer, image);
+  SDL_FreeSurface(image);
+  return canvas;
+}
+
+p8_Canvas *p8_image(s32 w, s32 h, const u8 *data, s32 format) {
+  p8_Image *image = p8_toimage(w, h, (void *)data, format);
+  
+  if (!image)
+    return NULL;
+  
+  return p8_tocanvas(image);
+}
+
+p8_Canvas *p8_imagex(s32 w, s32 h, const u8 *data, p8_Pixel colorkey) {
+  p8_Image *image = p8_toimage(w, h, (void *)data, P8_FORMAT_RGB);
+
+  if (!image)
+    return NULL;
+
+  SDL_SetColorKey(image, SDL_TRUE, colorkey.rgba);
+  return p8_tocanvas(image);
+}
+
+p8_Canvas *p8_load(const char *filename) {
+  p8_Canvas *canvas;
+  s32 w, h, format;
+  u8 *data = stbi_load(filename, &w, &h, &format, STBI_rgb_alpha);
+
+  if (!data)
+    return NULL;
+
+  canvas = p8_image(w, h, data, format);
+  stbi_image_free(data);
+
+  return canvas;
+}
+
+p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
+  p8_Canvas *canvas;
+  s32 w, h, format;
+  u8 *data = stbi_load(filename, &w, &h, &format, STBI_rgb_alpha);
+
+  if (!data)
+    return NULL;
+
+  canvas = (format == STBI_rgb) ? p8_imagex(w, h, data, colorkey)
+                                : p8_image(w, h, data, format);
+  stbi_image_free(data);
 
   return canvas;
 }
