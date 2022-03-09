@@ -130,6 +130,8 @@ P8_API p8_Canvas *p8_load(const char *filename);
 P8_API p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey);
 P8_API void p8_destroy(p8_Canvas *canvas);
 
+P8_API void p8_size(p8_Canvas *canvas, s32 *w, s32 *h);
+
 P8_API void p8_clear(p8_Canvas *canvas);
 P8_API void p8_color(p8_Canvas *canvas, p8_Pixel color);
 

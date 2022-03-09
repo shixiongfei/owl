@@ -20,6 +20,7 @@
 #define P8_FPS_DEFAULT 60
 
 #define P8_PIXELFORMAT SDL_PIXELFORMAT_RGBA8888
+#define P8_BLENDMODE SDL_BLENDMODE_BLEND
 
 typedef struct SDL_Surface p8_Image;
 
@@ -74,7 +75,7 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
     return false;
   }
 
-  SDL_SetRenderDrawBlendMode(app->renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
   SDL_DisableScreenSaver();
   app->quit = 0;
 
@@ -167,27 +168,33 @@ p8_Canvas *p8_canvas(s32 w, s32 h) {
   if (!canvas)
     return NULL;
 
-  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+  SDL_SetTextureBlendMode(canvas, P8_BLENDMODE);
 
   return canvas;
 }
 
-static p8_Image *p8_toimage(s32 w, s32 h, void *data, s32 format) {
-  s32 d = format * 8;
-  s32 p = format * w;
-  s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
-                                    : SDL_PIXELFORMAT_RGBA32;
-  return SDL_CreateRGBSurfaceWithFormatFrom(data, w, h, d, p, f);
+static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, s32 channel) {
+  s32 d = channel * 8;
+  s32 p = channel * w;
+  s32 f = (channel == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
+                                     : SDL_PIXELFORMAT_RGBA32;
+  return SDL_CreateRGBSurfaceWithFormatFrom((void *)data, w, h, d, p, f);
 }
 
 static p8_Canvas *p8_tocanvas(p8_Image *image) {
   p8_Canvas *canvas = SDL_CreateTextureFromSurface(app->renderer, image);
   SDL_FreeSurface(image);
+
+  if (!canvas)
+    return NULL;
+
+  SDL_SetTextureBlendMode(canvas, P8_BLENDMODE);
+
   return canvas;
 }
 
 p8_Canvas *p8_image(s32 w, s32 h, const u8 *data, s32 format) {
-  p8_Image *image = p8_toimage(w, h, (void *)data, format);
+  p8_Image *image = p8_toimage(w, h, data, format);
   
   if (!image)
     return NULL;
@@ -196,19 +203,22 @@ p8_Canvas *p8_image(s32 w, s32 h, const u8 *data, s32 format) {
 }
 
 p8_Canvas *p8_imagex(s32 w, s32 h, const u8 *data, p8_Pixel colorkey) {
-  p8_Image *image = p8_toimage(w, h, (void *)data, P8_FORMAT_RGB);
+  p8_Image *image = p8_toimage(w, h, data, P8_FORMAT_RGB);
+  u32 key;
 
   if (!image)
     return NULL;
 
-  SDL_SetColorKey(image, SDL_TRUE, colorkey.rgba);
+  key = SDL_MapRGB(image->format, colorkey.r, colorkey.g, colorkey.b);
+  SDL_SetColorKey(image, SDL_TRUE, key);
+
   return p8_tocanvas(image);
 }
 
 p8_Canvas *p8_load(const char *filename) {
   p8_Canvas *canvas;
   s32 w, h, format;
-  u8 *data = stbi_load(filename, &w, &h, &format, STBI_rgb_alpha);
+  u8 *data = stbi_load(filename, &w, &h, &format, 0);
 
   if (!data)
     return NULL;
@@ -222,7 +232,7 @@ p8_Canvas *p8_load(const char *filename) {
 p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
   p8_Canvas *canvas;
   s32 w, h, format;
-  u8 *data = stbi_load(filename, &w, &h, &format, STBI_rgb);
+  u8 *data = stbi_load(filename, &w, &h, &format, 0);
 
   if (!data)
     return NULL;
@@ -235,6 +245,10 @@ p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
 }
 
 void p8_destroy(p8_Canvas *canvas) { SDL_DestroyTexture(canvas); }
+
+void p8_size(p8_Canvas *canvas, s32 *w, s32 *h) {
+  SDL_QueryTexture(canvas, NULL, NULL, w, h);
+}
 
 void p8_clear(p8_Canvas *canvas) {
   SDL_SetRenderTarget(app->renderer, canvas);
