@@ -99,6 +99,7 @@ typedef struct p8_Rect {
 #define P8_FORMAT_RGBA 4
 
 typedef struct SDL_Texture p8_Canvas;
+typedef struct p8_Table p8_Table;
 
 P8_INLINE p8_Pixel p8_rgb(u8 r, u8 g, u8 b) {
   p8_Pixel p = {r, g, b, 0xFF};
@@ -151,8 +152,14 @@ P8_API void p8_clip(p8_Canvas *canvas, const p8_Rect *rect);
 P8_API void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                     const p8_Rect *dstrect);
 
-P8_API void p8_loadfont(const char *font, const char *filename);
-P8_API void p8_font(const char *font, s32 size, s32 weight, p8_Pixel color);
+P8_API p8_Table *p8_table(void);
+P8_API void p8_tablefree(p8_Table *table);
+
+P8_API void *p8_settable(p8_Table *table, const char *name, void *value);
+P8_API void *p8_gettable(p8_Table *table, const char *name);
+
+P8_API void p8_loadfont(const char *name, const char *filename);
+P8_API void p8_font(const char *name, s32 size, s32 weight, p8_Pixel color);
 P8_API void p8_text(p8_Canvas *canvas, s32 x, s32 y, const char *text, s32 w);
 
 P8_API s64 p8_filesize(const char *filename);

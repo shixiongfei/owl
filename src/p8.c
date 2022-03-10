@@ -337,7 +337,7 @@ void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                  (const SDL_Rect *)dstrect);
 }
 
-void p8_loadfont(const char *font, const char *filename) {
+void p8_loadfont(const char *name, const char *filename) {
   app->font.data = p8_readfile(filename);
 
   stbtt_InitFont(&app->font.info, app->font.data, 0);
