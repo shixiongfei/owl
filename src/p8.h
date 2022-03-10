@@ -151,6 +151,13 @@ P8_API void p8_clip(p8_Canvas *canvas, const p8_Rect *rect);
 P8_API void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                     const p8_Rect *dstrect);
 
+P8_API void p8_loadfont(const char *font, const char *filename);
+P8_API void p8_font(const char *font, s32 size, s32 weight, p8_Pixel color);
+P8_API void p8_text(p8_Canvas *canvas, s32 x, s32 y, const char *text, s32 w);
+
+P8_API s64 p8_filesize(const char *filename);
+P8_API u8 *p8_readfile(const char *filename);
+
 #ifdef __cplusplus
 };
 #endif

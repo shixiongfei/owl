@@ -14,6 +14,12 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STB_RECT_PACK_IMPLEMENTATION
+#include "stb_rect_pack.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 #include "p8.h"
 
 #define P8_FPS_UPPER_LIMIT 200
@@ -24,6 +30,16 @@
 #define P8_BLENDMODE SDL_BLENDMODE_BLEND
 
 typedef struct SDL_Surface p8_Image;
+
+typedef struct p8_Font {
+  stbtt_fontinfo info;
+  f32 scale;
+  s32 ascent;
+  s32 descent;
+  s32 linegap;
+  s32 baseline;
+  u8 *data;
+} p8_Font;
 
 typedef struct p8_Window {
   bool quit;
@@ -36,6 +52,8 @@ typedef struct p8_Window {
   f32 rateticks;
   u64 baseticks;
   u64 lastticks;
+
+  p8_Font font;
 } p8_Window;
 
 static p8_Window p8_app = {0};
@@ -98,6 +116,11 @@ void p8_quit(void) {
   if (app->window) {
     SDL_DestroyWindow(app->window);
     app->window = NULL;
+  }
+
+  if (app->font.data) {
+    free(app->font.data);
+    app->font.data = NULL;
   }
 
   SDL_Quit();
@@ -312,6 +335,18 @@ void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
   SDL_SetRenderTarget(app->renderer, canvas);
   SDL_RenderCopy(app->renderer, src, (const SDL_Rect *)srcrect,
                  (const SDL_Rect *)dstrect);
+}
+
+void p8_loadfont(const char *font, const char *filename) {
+  app->font.data = p8_readfile(filename);
+
+  stbtt_InitFont(&app->font.info, app->font.data, 0);
+
+  stbtt_GetFontVMetrics(&app->font.info, &app->font.ascent, &app->font.descent,
+                        &app->font.linegap);
+  app->font.scale = stbtt_ScaleForPixelHeight(&app->font.info, 32);
+  app->font.baseline = (s32)(app->font.ascent * app->font.scale);
+
 }
 
 extern int p8_main(int argc, char *argv[]);
