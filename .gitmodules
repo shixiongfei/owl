@@ -1,3 +1,6 @@
 [submodule "3rd/sdl2"]
 	path = 3rd/sdl2
 	url = https://github.com/libsdl-org/SDL
+[submodule "3rd/utf8"]
+	path = 3rd/utf8
+	url = https://github.com/shixiongfei/utf8.git
