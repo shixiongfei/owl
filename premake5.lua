@@ -69,6 +69,7 @@ workspace ( "p8" )
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
+      links { "iconv" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
