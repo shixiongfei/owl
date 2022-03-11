@@ -38,7 +38,6 @@ typedef struct p8_Font {
   s32 descent;
   s32 linegap;
   s32 baseline;
-  u8 *data;
 } p8_Font;
 
 typedef struct p8_Window {
@@ -118,9 +117,9 @@ void p8_quit(void) {
     app->window = NULL;
   }
 
-  if (app->font.data) {
-    free(app->font.data);
-    app->font.data = NULL;
+  if (app->font.info.data) {
+    free(app->font.info.data);
+    app->font.info.data = NULL;
   }
 
   SDL_Quit();
@@ -337,16 +336,21 @@ void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                  (const SDL_Rect *)dstrect);
 }
 
-void p8_loadfont(const char *name, const char *filename) {
-  app->font.data = p8_readfile(filename);
+bool p8_loadfont(const char *name, const char *filename) {
+  u8 *data = p8_readfile(filename);
+  s32 offset = stbtt_GetFontOffsetForIndex(data, 0);
 
-  stbtt_InitFont(&app->font.info, app->font.data, 0);
+  if (!stbtt_InitFont(&app->font.info, data, offset)) {
+    free(data);
+    return false;
+  }
 
   stbtt_GetFontVMetrics(&app->font.info, &app->font.ascent, &app->font.descent,
                         &app->font.linegap);
   app->font.scale = stbtt_ScaleForPixelHeight(&app->font.info, 32);
   app->font.baseline = (s32)(app->font.ascent * app->font.scale);
 
+  return true;
 }
 
 extern int p8_main(int argc, char *argv[]);
