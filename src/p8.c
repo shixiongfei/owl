@@ -414,30 +414,50 @@ bool p8_font(const char *name, s32 size, s32 weight, p8_Pixel color) {
   app->font.ascent = ascent;
   app->font.descent = descent;
   app->font.linegap = linegap;
-  app->font.scale = stbtt_ScaleForPixelHeight(ttf, (f32)size);
+  app->font.scale = stbtt_ScaleForMappingEmToPixels(ttf, (f32)size);
   app->font.baseline = (s32)(ascent * app->font.scale);
   app->font.height = (s32)((ascent - descent) * app->font.scale);
 
   return true;
 }
 
-static u8 *p8_ttfchar(p8_Font *font, s32 ch, s32 *width, s32 *height) {
+static s32 p8_ttfwide(p8_Font *font, s32 ch, s32 last) {
+  s32 ax, lsb, kern = 0;
+
+  stbtt_GetCodepointHMetrics(font->ttf, ch, &ax, &lsb);
+
+  if (last)
+    kern = stbtt_GetCodepointKernAdvance(font->ttf, ch, last);
+
+  return (s32)((ax + kern) * font->scale);
+}
+
+static u8 *p8_ttfglyph(p8_Font *font, s32 ch, s32 *width, s32 *height) {
   p8_TrueType *ttf = font->ttf;
   f32 scale = font->scale;
-  s32 x1, y1, x2, y2, w, h;
-  u8 *bitmap;
+  s32 x1, y1, x2, y2;
+  s32 x, y, w, h;
+  u8 *bitmap, *pixels;
 
-  stbtt_GetCodepointBitmapBox(ttf, ch, scale, scale, &x1, &y1, &x2, &y2);
-
-  w = x2 - x1;
-  h = y2 - y1;
+  w = p8_ttfwide(font, ch, 0);
+  h = font->height;
 
   bitmap = (u8 *)malloc(w * h);
 
   if (!bitmap)
     return NULL;
 
-  stbtt_MakeCodepointBitmap(ttf, bitmap, w, h, w, scale, scale, ch);
+  memset(bitmap, 0, w * h);
+
+  stbtt_GetCodepointBitmapBoxSubpixel(ttf, ch, scale, scale, 0, 0, &x1, &y1,
+                                      &x2, &y2);
+
+  x = x1;
+  y = font->baseline + y1;
+  pixels = bitmap + x + y * w;
+
+  stbtt_MakeCodepointBitmapSubpixel(ttf, pixels, w - x, h - y, w, scale, scale,
+                                    0, 0, ch);
 
   if (width)
     *width = w;
@@ -449,15 +469,13 @@ static u8 *p8_ttfchar(p8_Font *font, s32 ch, s32 *width, s32 *height) {
 }
 
 #include <Windows.h>
-void p8_text(p8_Canvas *canvas, const p8_Rect *rect, const char *text) {
-  p8_Font *font = &app->font;
+
+static void pp(p8_Font *font, s32 ch) {
   s32 i, j, w, h;
 
-  AllocConsole();
-  freopen("CONOUT$", "w", stdout);
+  u8 *bitmap = p8_ttfglyph(font, ch, &w, &h);
 
-  u8 *bitmap = p8_ttfchar(font, L'Ни', &w, &h);
-
+  // https://github.com/rxi/juno/blob/master/src/ttf.c
   printf("w: %d, h: %d\n", w, h);
 
   for (j = 0; j < h; ++j) {
@@ -466,8 +484,20 @@ void p8_text(p8_Canvas *canvas, const p8_Rect *rect, const char *text) {
     }
     putchar('\n');
   }
+  putchar('\n');
 
   free(bitmap);
+}
+
+void p8_text(p8_Canvas *canvas, const p8_Rect *rect, const char *text) {
+  p8_Font *font = &app->font;
+  
+
+  AllocConsole();
+  freopen("CONOUT$", "w", stdout);
+
+  pp(font, L'K');
+  pp(font, L'Ни');
 }
 
 extern int p8_main(int argc, char *argv[]);
