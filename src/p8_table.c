@@ -19,10 +19,16 @@ struct p8_Table {
   p8_Table *next[P8_TRIE_FACTOR];
 };
 
-p8_Table *p8_table(void) {}
+p8_Table *p8_table(void) { return NULL; }
 
 void p8_tablefree(p8_Table *table) {}
 
-void *p8_settable(p8_Table *table, const char *name, void *value) {}
+void *p8_settable(p8_Table *table, const char *name, void *value) {
+  return NULL;
+}
 
-void *p8_gettable(p8_Table *table, const char *name) {}
+void *p8_gettable(p8_Table *table, const char *name) {
+  return NULL;
+}
+
+void p8_cleartable(p8_Table *table, void (*dtor)(void *)) {}

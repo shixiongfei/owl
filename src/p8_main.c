@@ -34,6 +34,8 @@ int p8_main(int argc, char *argv[]) {
   }
 
   p8_loadfont("", "./simsun.ttc");
+  p8_font("", 24, 0, p8_rgb(0, 0, 0));
+  p8_text(screen, NULL, "");
 
   hero = p8_loadex("hero.bmp", p8_rgb(0xff, 0, 0xff));
 

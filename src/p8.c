@@ -30,14 +30,16 @@
 #define P8_BLENDMODE SDL_BLENDMODE_BLEND
 
 typedef struct SDL_Surface p8_Image;
+typedef struct stbtt_fontinfo p8_TrueType;
 
 typedef struct p8_Font {
-  stbtt_fontinfo info;
-  f32 scale;
+  p8_TrueType *ttf;
   s32 ascent;
   s32 descent;
   s32 linegap;
+  f32 scale;
   s32 baseline;
+  s32 height;
 } p8_Font;
 
 typedef struct p8_Window {
@@ -52,11 +54,42 @@ typedef struct p8_Window {
   u64 baseticks;
   u64 lastticks;
 
+  p8_Table *ttfs;
   p8_Font font;
 } p8_Window;
 
 static p8_Window p8_app = {0};
 static p8_Window *app = &p8_app;
+
+static p8_TrueType *p8_loadttf(const char *filename) {
+  u8 *data = p8_readfile(filename);
+  p8_TrueType *ttf;
+  s32 offset;
+
+  if (!data)
+    return NULL;
+
+  ttf = (p8_TrueType *)malloc(sizeof(p8_TrueType));
+
+  if (!ttf) {
+    free(data);
+    return NULL;
+  }
+
+  offset = stbtt_GetFontOffsetForIndex(data, 0);
+
+  if (!stbtt_InitFont(ttf, data, offset)) {
+    free(data);
+    return NULL;
+  }
+
+  return ttf;
+}
+
+static void p8_ttffree(p8_TrueType *ttf) {
+  free(ttf->data);
+  free(ttf);
+}
 
 u64 p8_ticks(void) {
   u64 ticks = SDL_GetTicks64();
@@ -95,8 +128,17 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
 
   SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
   SDL_DisableScreenSaver();
-  app->quit = 0;
 
+  app->ttfs = p8_table();
+
+  /* TODO
+  if (!app->ttfs) {
+    p8_quit();
+    return false;
+  }
+  */
+
+  app->quit = 0;
   app->framecount = 0;
   app->rate = P8_FPS_DEFAULT;
   app->rateticks = 1000.0f / (f32)P8_FPS_DEFAULT;
@@ -117,9 +159,10 @@ void p8_quit(void) {
     app->window = NULL;
   }
 
-  if (app->font.info.data) {
-    free(app->font.info.data);
-    app->font.info.data = NULL;
+  if (app->ttfs) {
+    p8_cleartable(app->ttfs, p8_ttffree);
+    p8_tablefree(app->ttfs);
+    app->ttfs = NULL;
   }
 
   SDL_Quit();
@@ -337,20 +380,94 @@ void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
 }
 
 bool p8_loadfont(const char *name, const char *filename) {
-  u8 *data = p8_readfile(filename);
-  s32 offset = stbtt_GetFontOffsetForIndex(data, 0);
+  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
 
-  if (!stbtt_InitFont(&app->font.info, data, offset)) {
-    free(data);
+  ttf = app->font.ttf; // TODO: pending delete
+
+  if (ttf)
+    return true;
+
+  ttf = p8_loadttf(filename);
+
+  if (!ttf)
     return false;
-  }
 
-  stbtt_GetFontVMetrics(&app->font.info, &app->font.ascent, &app->font.descent,
-                        &app->font.linegap);
-  app->font.scale = stbtt_ScaleForPixelHeight(&app->font.info, 32);
-  app->font.baseline = (s32)(app->font.ascent * app->font.scale);
+  p8_settable(app->ttfs, name, ttf);
+
+  app->font.ttf = ttf; // TODO: pending delete
 
   return true;
+}
+
+bool p8_font(const char *name, s32 size, s32 weight, p8_Pixel color) {
+  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
+  s32 ascent, descent, linegap;
+
+  ttf = app->font.ttf; // TODO: pending delete
+
+  if (!ttf)
+    return false;
+
+  stbtt_GetFontVMetrics(ttf, &ascent, &descent, &linegap);
+
+  app->font.ttf = ttf;
+  app->font.ascent = ascent;
+  app->font.descent = descent;
+  app->font.linegap = linegap;
+  app->font.scale = stbtt_ScaleForPixelHeight(ttf, (f32)size);
+  app->font.baseline = (s32)(ascent * app->font.scale);
+  app->font.height = (s32)((ascent - descent) * app->font.scale);
+
+  return true;
+}
+
+static u8 *p8_ttfchar(p8_Font *font, s32 ch, s32 *width, s32 *height) {
+  p8_TrueType *ttf = font->ttf;
+  f32 scale = font->scale;
+  s32 x1, y1, x2, y2, w, h;
+  u8 *bitmap;
+
+  stbtt_GetCodepointBitmapBox(ttf, ch, scale, scale, &x1, &y1, &x2, &y2);
+
+  w = x2 - x1;
+  h = y2 - y1;
+
+  bitmap = (u8 *)malloc(w * h);
+
+  if (!bitmap)
+    return NULL;
+
+  stbtt_MakeCodepointBitmap(ttf, bitmap, w, h, w, scale, scale, ch);
+
+  if (width)
+    *width = w;
+
+  if (height)
+    *height = h;
+
+  return bitmap;
+}
+
+#include <Windows.h>
+void p8_text(p8_Canvas *canvas, const p8_Rect *rect, const char *text) {
+  p8_Font *font = &app->font;
+  s32 i, j, w, h;
+
+  AllocConsole();
+  freopen("CONOUT$", "w", stdout);
+
+  u8 *bitmap = p8_ttfchar(font, L'Ни', &w, &h);
+
+  printf("w: %d, h: %d\n", w, h);
+
+  for (j = 0; j < h; ++j) {
+    for (i = 0; i < w; ++i) {
+      putchar(" .:ioVM@"[bitmap[j * w + i] >> 5]);
+    }
+    putchar('\n');
+  }
+
+  free(bitmap);
 }
 
 extern int p8_main(int argc, char *argv[]);

@@ -157,10 +157,11 @@ P8_API void p8_tablefree(p8_Table *table);
 
 P8_API void *p8_settable(p8_Table *table, const char *name, void *value);
 P8_API void *p8_gettable(p8_Table *table, const char *name);
+P8_API void p8_cleartable(p8_Table *table, void (*dtor)(void *));
 
 P8_API bool p8_loadfont(const char *name, const char *filename);
 P8_API bool p8_font(const char *name, s32 size, s32 weight, p8_Pixel color);
-P8_API void p8_text(p8_Canvas *canvas, s32 x, s32 y, const char *text, s32 w);
+P8_API void p8_text(p8_Canvas *canvas, const p8_Rect *rect, const char *text);
 
 P8_API s64 p8_filesize(const char *filename);
 P8_API u8 *p8_readfile(const char *filename);
