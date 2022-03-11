@@ -33,12 +33,12 @@ int p8_main(int argc, char *argv[]) {
     return -1;
   }
 
+  p8_loadfont("宋体", "./simsun.ttc");
+  p8_font("宋体", 18);
+  text = p8_text("中英文abc混合ABC测试!", &text_pos.w, &text_pos.h);
+
   text_pos.x = 200;
   text_pos.y = 20;
-
-  p8_loadfont("宋体", "./simsun.ttc");
-  p8_font("宋体", 24);
-  text = p8_text("中英文abc混合ABC测试!", &text_pos.w, &text_pos.h);
   p8_blend(text, p8_rgb(0xff, 0, 0));
 
   hero = p8_loadex("hero.bmp", p8_rgb(0xff, 0, 0xff));

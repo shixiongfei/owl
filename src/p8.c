@@ -158,6 +158,30 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
   return bitmap;
 }
 
+static u32 *p8_ttfpixels(p8_Font *font, const char *text, s32 *w, s32 *h) {
+  u32 i, size, *pixels;
+  u8 *bitmap;
+
+  bitmap = p8_ttfbitmap(font, text, w, h);
+
+  if (!bitmap)
+    return NULL;
+
+  size = *w * *h;
+  pixels = (u32 *)calloc(1, size * sizeof(Uint32));
+
+  if (!pixels) {
+    free(bitmap);
+    return NULL;
+  }
+
+  for (i = 0; i < size; ++i)
+    pixels[i] = SDL_MapRGBA(font->format, 0xFF, 0xFF, 0xFF, bitmap[i]);
+
+  free(bitmap);
+  return pixels;
+}
+
 u64 p8_ticks(void) {
   u64 ticks = SDL_GetTicks64();
   return ticks > 0 ? ticks : 1;
@@ -435,28 +459,16 @@ p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
 p8_Canvas *p8_text(const char *text, s32 *w, s32 *h) {
   p8_Font *font = &app->font;
   p8_Canvas *canvas;
-  s32 i, width, height;
+  s32 width, height;
   u32 *pixels;
-  u8 *bitmap;
- 
-  bitmap = p8_ttfbitmap(font, text, &width, &height);
 
-  if (!bitmap)
+  pixels = p8_ttfpixels(font, text, &width, &height);
+
+  if (!pixels)
     return NULL;
-
-  pixels = (u32 *)malloc(width * height * sizeof(u32));
-
-  if (!pixels) {
-    free(bitmap);
-    return NULL;
-  }
-
-  for (i = 0; i < width * height; ++i)
-    pixels[i] = SDL_MapRGBA(font->format, 0xFF, 0xFF, 0xFF, bitmap[i]);
-
+  
   canvas = p8_image((u8 *)pixels, width, height, P8_FORMAT_RGBA);
   free(pixels);
-  free(bitmap);
 
   if (w)
     *w = width;
