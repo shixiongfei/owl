@@ -30,8 +30,9 @@ workspace ( "p8" )
   project ( "p8" )
     kind ( "WindowedApp" )
     language ( "C" )
-    files { "./src/**.h", "./src/**.c", "./3rd/*.h" }
-    includedirs { "./3rd", "./3rd/sdl2/include" }
+    files { "./src/**.h", "./src/**.c", "./3rd/*.h",
+            "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c" }
+    includedirs { "./3rd", "./3rd/sdl2/include", "./3rd/utf8" }
     libdirs { "./libs" }
     objdir ( "./objs" )
     targetdir ( "./bin" )

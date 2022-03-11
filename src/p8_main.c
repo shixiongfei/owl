@@ -15,13 +15,13 @@
 #define SCREEN_H 600
 
 int p8_main(int argc, char *argv[]) {
-  p8_Canvas *screen, *hero;
+  p8_Canvas *screen, *hero, *text;
   p8_Point points[4] = {{13, 13}, {13, 15}, {15, 13}, {15, 15}};
   p8_Point lines[4] = {{320, 200}, {300, 240}, {340, 240}, {320, 200}};
   p8_Rect rect = {150, 150, 100, 50};
   p8_Rect rects[2] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
   p8_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
-  p8_Rect hero_pos;
+  p8_Rect hero_pos, text_pos;
 
   if (!p8_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
     return -1;
@@ -33,9 +33,13 @@ int p8_main(int argc, char *argv[]) {
     return -1;
   }
 
-  p8_loadfont("", "./simsun.ttc");
-  p8_font("", 24, 0, p8_rgb(0, 0, 0));
-  p8_text(screen, NULL, "");
+  text_pos.x = 200;
+  text_pos.y = 20;
+
+  p8_loadfont("宋体", "./simsun.ttc");
+  p8_font("宋体", 24);
+  text = p8_text("中英文abc混合ABC测试!", &text_pos.w, &text_pos.h);
+  p8_blend(text, p8_rgb(0xff, 0, 0));
 
   hero = p8_loadex("hero.bmp", p8_rgb(0xff, 0, 0xff));
 
@@ -65,11 +69,13 @@ int p8_main(int argc, char *argv[]) {
     p8_fillrects(screen, rects1, 2);
 
     p8_blit(screen, hero, NULL, &hero_pos);
+    p8_blit(screen, text, NULL, &text_pos);
 
     p8_present(screen);
     p8_wait();
   }
 
+  p8_destroy(text);
   p8_destroy(hero);
   p8_destroy(screen);
   p8_quit();

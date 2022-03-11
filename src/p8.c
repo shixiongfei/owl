@@ -10,6 +10,7 @@
  */
 
 #include "SDL.h"
+#include "utf8.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -33,6 +34,7 @@ typedef struct SDL_Surface p8_Image;
 typedef struct stbtt_fontinfo p8_TrueType;
 
 typedef struct p8_Font {
+  SDL_PixelFormat *format;
   p8_TrueType *ttf;
   s32 ascent;
   s32 descent;
@@ -91,6 +93,71 @@ static void p8_ttffree(p8_TrueType *ttf) {
   free(ttf);
 }
 
+static f32 p8_ttfwide(p8_Font *font, ucs4_t ch, ucs4_t last) {
+  s32 ax, lsb, kern = 0;
+
+  stbtt_GetCodepointHMetrics(font->ttf, ch, &ax, &lsb);
+
+  if (last)
+    kern = stbtt_GetCodepointKernAdvance(font->ttf, ch, last);
+
+  return (ax + kern) * font->scale;
+}
+
+static s32 p8_ttfwidth(p8_Font *font, const char *text) {
+  const char *p = text;
+  f32 width = 0;
+  ucs4_t ch, last = 0;
+
+  while (*p) {
+    p += utf8_tounicode(p, &ch);
+    width += p8_ttfwide(font, ch, last);
+    last = ch;
+  }
+  return (s32)ceil(width);
+}
+
+static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
+  p8_TrueType *ttf = font->ttf;
+  const char *p = text;
+  ucs4_t ch, last = 0;
+  s32 x, y, x1, y1, x2, y2;
+  f32 xoff = 0, xfract = 0;
+  u8 *bitmap, *pixels;
+
+  *w = p8_ttfwidth(font, text);
+  *h = font->height + 1;
+
+  bitmap = (u8 *)calloc(1, *w * *h);
+
+  if (!bitmap)
+    return NULL;
+
+  while (*p) {
+    p += utf8_tounicode(p, &ch);
+
+    stbtt_GetCodepointBitmapBoxSubpixel(ttf, ch, font->scale, font->scale,
+                                        xfract, 0, &x1, &y1, &x2, &y2);
+    x = (s32)(xoff + x1);
+    y = font->baseline + y1;
+
+    if (x < 0)
+      x = 0;
+
+    if (y < 0)
+      y = 0;
+
+    pixels = bitmap + x + (y * *w);
+
+    stbtt_MakeCodepointBitmapSubpixel(ttf, pixels, *w - x, *h - y, *w,
+                                      font->scale, font->scale, xfract, 0, ch);
+    xoff += p8_ttfwide(font, ch, last);
+    xfract = xoff - (int)xoff;
+    last = ch;
+  }
+  return bitmap;
+}
+
 u64 p8_ticks(void) {
   u64 ticks = SDL_GetTicks64();
   return ticks > 0 ? ticks : 1;
@@ -126,8 +193,12 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
     return false;
   }
 
-  SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
-  SDL_DisableScreenSaver();
+  app->font.format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
+
+  if (!app->font.format) {
+    p8_quit();
+    return false;
+  }
 
   app->ttfs = p8_table();
 
@@ -137,6 +208,9 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
     return false;
   }
   */
+
+  SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
+  SDL_DisableScreenSaver();
 
   app->quit = 0;
   app->framecount = 0;
@@ -163,6 +237,11 @@ void p8_quit(void) {
     p8_cleartable(app->ttfs, p8_ttffree);
     p8_tablefree(app->ttfs);
     app->ttfs = NULL;
+  }
+
+  if (app->font.format) {
+    SDL_FreeFormat(app->font.format);
+    app->font.format = NULL;
   }
 
   SDL_Quit();
@@ -227,6 +306,48 @@ u32 p8_wait(void) {
   return time_passed;
 }
 
+bool p8_loadfont(const char *name, const char *filename) {
+  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
+
+  ttf = app->font.ttf; // TODO: pending delete
+
+  if (ttf)
+    return true;
+
+  ttf = p8_loadttf(filename);
+
+  if (!ttf)
+    return false;
+
+  p8_settable(app->ttfs, name, ttf);
+
+  app->font.ttf = ttf; // TODO: pending delete
+
+  return true;
+}
+
+bool p8_font(const char *name, s32 size) {
+  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
+  s32 ascent, descent, linegap;
+
+  ttf = app->font.ttf; // TODO: pending delete
+
+  if (!ttf)
+    return false;
+
+  stbtt_GetFontVMetrics(ttf, &ascent, &descent, &linegap);
+
+  app->font.ttf = ttf;
+  app->font.ascent = ascent;
+  app->font.descent = descent;
+  app->font.linegap = linegap;
+  app->font.scale = stbtt_ScaleForMappingEmToPixels(ttf, (f32)size);
+  app->font.baseline = (s32)(ascent * app->font.scale);
+  app->font.height = (s32)ceil((ascent - descent) * app->font.scale);
+
+  return true;
+}
+
 p8_Canvas *p8_canvas(s32 w, s32 h) {
   s32 format = P8_PIXELFORMAT;
   s32 access = SDL_TEXTUREACCESS_TARGET;
@@ -260,7 +381,7 @@ static p8_Canvas *p8_tocanvas(p8_Image *image) {
   return canvas;
 }
 
-p8_Canvas *p8_image(s32 w, s32 h, const u8 *data, s32 format) {
+p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, s32 format) {
   p8_Image *image = p8_toimage(w, h, data, format);
 
   if (!image)
@@ -269,7 +390,7 @@ p8_Canvas *p8_image(s32 w, s32 h, const u8 *data, s32 format) {
   return p8_tocanvas(image);
 }
 
-p8_Canvas *p8_imagex(s32 w, s32 h, const u8 *data, p8_Pixel colorkey) {
+p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey) {
   p8_Image *image = p8_toimage(w, h, data, P8_FORMAT_RGB);
   u32 key;
 
@@ -290,7 +411,7 @@ p8_Canvas *p8_load(const char *filename) {
   if (!data)
     return NULL;
 
-  canvas = p8_image(w, h, data, format);
+  canvas = p8_image(data, w, h, format);
   stbi_image_free(data);
 
   return canvas;
@@ -304,9 +425,44 @@ p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
   if (!data)
     return NULL;
 
-  canvas = (format == STBI_rgb) ? p8_imagex(w, h, data, colorkey)
-                                : p8_image(w, h, data, format);
+  canvas = (format == STBI_rgb) ? p8_imagex(data, w, h, colorkey)
+                                : p8_image(data, w, h, format);
   stbi_image_free(data);
+
+  return canvas;
+}
+
+p8_Canvas *p8_text(const char *text, s32 *w, s32 *h) {
+  p8_Font *font = &app->font;
+  p8_Canvas *canvas;
+  s32 i, width, height;
+  u32 *pixels;
+  u8 *bitmap;
+ 
+  bitmap = p8_ttfbitmap(font, text, &width, &height);
+
+  if (!bitmap)
+    return NULL;
+
+  pixels = (u32 *)malloc(width * height * sizeof(u32));
+
+  if (!pixels) {
+    free(bitmap);
+    return NULL;
+  }
+
+  for (i = 0; i < width * height; ++i)
+    pixels[i] = SDL_MapRGBA(font->format, 0xFF, 0xFF, 0xFF, bitmap[i]);
+
+  canvas = p8_image((u8 *)pixels, width, height, P8_FORMAT_RGBA);
+  free(pixels);
+  free(bitmap);
+
+  if (w)
+    *w = width;
+
+  if (h)
+    *h = height;
 
   return canvas;
 }
@@ -325,6 +481,11 @@ void p8_clear(p8_Canvas *canvas) {
 void p8_color(p8_Canvas *canvas, p8_Pixel color) {
   SDL_SetRenderTarget(app->renderer, canvas);
   SDL_SetRenderDrawColor(app->renderer, color.r, color.g, color.b, color.a);
+}
+
+void p8_blend(p8_Canvas *canvas, p8_Pixel color) {
+  SDL_SetTextureColorMod(canvas, color.r, color.g, color.b);
+  SDL_SetTextureAlphaMod(canvas, color.a);
 }
 
 void p8_pixel(p8_Canvas *canvas, s32 x, s32 y) {
@@ -377,127 +538,6 @@ void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
   SDL_SetRenderTarget(app->renderer, canvas);
   SDL_RenderCopy(app->renderer, src, (const SDL_Rect *)srcrect,
                  (const SDL_Rect *)dstrect);
-}
-
-bool p8_loadfont(const char *name, const char *filename) {
-  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
-
-  ttf = app->font.ttf; // TODO: pending delete
-
-  if (ttf)
-    return true;
-
-  ttf = p8_loadttf(filename);
-
-  if (!ttf)
-    return false;
-
-  p8_settable(app->ttfs, name, ttf);
-
-  app->font.ttf = ttf; // TODO: pending delete
-
-  return true;
-}
-
-bool p8_font(const char *name, s32 size, s32 weight, p8_Pixel color) {
-  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
-  s32 ascent, descent, linegap;
-
-  ttf = app->font.ttf; // TODO: pending delete
-
-  if (!ttf)
-    return false;
-
-  stbtt_GetFontVMetrics(ttf, &ascent, &descent, &linegap);
-
-  app->font.ttf = ttf;
-  app->font.ascent = ascent;
-  app->font.descent = descent;
-  app->font.linegap = linegap;
-  app->font.scale = stbtt_ScaleForMappingEmToPixels(ttf, (f32)size);
-  app->font.baseline = (s32)(ascent * app->font.scale);
-  app->font.height = (s32)((ascent - descent) * app->font.scale);
-
-  return true;
-}
-
-static s32 p8_ttfwide(p8_Font *font, s32 ch, s32 last) {
-  s32 ax, lsb, kern = 0;
-
-  stbtt_GetCodepointHMetrics(font->ttf, ch, &ax, &lsb);
-
-  if (last)
-    kern = stbtt_GetCodepointKernAdvance(font->ttf, ch, last);
-
-  return (s32)((ax + kern) * font->scale);
-}
-
-static u8 *p8_ttfglyph(p8_Font *font, s32 ch, s32 *width, s32 *height) {
-  p8_TrueType *ttf = font->ttf;
-  f32 scale = font->scale;
-  s32 x1, y1, x2, y2;
-  s32 x, y, w, h;
-  u8 *bitmap, *pixels;
-
-  w = p8_ttfwide(font, ch, 0);
-  h = font->height;
-
-  bitmap = (u8 *)malloc(w * h);
-
-  if (!bitmap)
-    return NULL;
-
-  memset(bitmap, 0, w * h);
-
-  stbtt_GetCodepointBitmapBoxSubpixel(ttf, ch, scale, scale, 0, 0, &x1, &y1,
-                                      &x2, &y2);
-
-  x = x1;
-  y = font->baseline + y1;
-  pixels = bitmap + x + y * w;
-
-  stbtt_MakeCodepointBitmapSubpixel(ttf, pixels, w - x, h - y, w, scale, scale,
-                                    0, 0, ch);
-
-  if (width)
-    *width = w;
-
-  if (height)
-    *height = h;
-
-  return bitmap;
-}
-
-#include <Windows.h>
-
-static void pp(p8_Font *font, s32 ch) {
-  s32 i, j, w, h;
-
-  u8 *bitmap = p8_ttfglyph(font, ch, &w, &h);
-
-  // https://github.com/rxi/juno/blob/master/src/ttf.c
-  printf("w: %d, h: %d\n", w, h);
-
-  for (j = 0; j < h; ++j) {
-    for (i = 0; i < w; ++i) {
-      putchar(" .:ioVM@"[bitmap[j * w + i] >> 5]);
-    }
-    putchar('\n');
-  }
-  putchar('\n');
-
-  free(bitmap);
-}
-
-void p8_text(p8_Canvas *canvas, const p8_Rect *rect, const char *text) {
-  p8_Font *font = &app->font;
-  
-
-  AllocConsole();
-  freopen("CONOUT$", "w", stdout);
-
-  pp(font, L'K');
-  pp(font, L'Ни');
 }
 
 extern int p8_main(int argc, char *argv[]);
