@@ -71,15 +71,14 @@ static void *p8_settrie(p8_Table *table, p8_TrieNode *trie, void *value) {
   return oldval;
 }
 
-static p8_TrieNode **p8_gettrie(p8_TrieNode *root, const char *name,
+static p8_TrieNode **p8_gettrie(p8_TrieNode **root, const char *name,
                                 bool build) {
-  p8_TrieNode **node = &root;
+  p8_TrieNode **node = root;
   const u8 *p = (const u8 *)name;
-  s32 lo, hi;
-  u8 ch;
+  u8 ch, lo, hi;
 
   if (!name)
-    return NULL;
+    return node;
 
   while (!!(ch = *p++)) {
     lo = ch & P8_TRIE_MASK;
@@ -106,8 +105,8 @@ static p8_TrieNode **p8_gettrie(p8_TrieNode *root, const char *name,
   return node;
 }
 
-static p8_TrieNode **p8_igettrie(p8_TrieNode *root, u64 key, bool build) {
-  p8_TrieNode **node = &root;
+static p8_TrieNode **p8_igettrie(p8_TrieNode **root, u64 key, bool build) {
+  p8_TrieNode **node = root;
 
   while (key > 0) {
     node = &(*node)->next[key & P8_TRIE_MASK];
@@ -156,7 +155,7 @@ void p8_cleartable(p8_Table *table, p8_Dtor dtor) {
 s32 p8_tablesize(p8_Table *table) { return table->count; }
 
 void *p8_settable(p8_Table *table, const char *name, void *value) {
-  p8_TrieNode **node = p8_gettrie(table->root, name, true);
+  p8_TrieNode **node = p8_gettrie(&table->root, name, true);
 
   if (!node)
     return NULL;
@@ -165,7 +164,7 @@ void *p8_settable(p8_Table *table, const char *name, void *value) {
 }
 
 void *p8_gettable(p8_Table *table, const char *name) {
-  p8_TrieNode **node = p8_gettrie(table->root, name, false);
+  p8_TrieNode **node = p8_gettrie(&table->root, name, false);
 
   if (!node)
     return NULL;
@@ -174,7 +173,7 @@ void *p8_gettable(p8_Table *table, const char *name) {
 }
 
 void *p8_isettable(p8_Table *table, u64 key, void *value) {
-  p8_TrieNode **node = p8_igettrie(table->root, key, true);
+  p8_TrieNode **node = p8_igettrie(&table->root, key, true);
 
   if (!node)
     return NULL;
@@ -183,7 +182,7 @@ void *p8_isettable(p8_Table *table, u64 key, void *value) {
 }
 
 void *p8_igettable(p8_Table *table, u64 key) {
-  p8_TrieNode **node = p8_igettrie(table->root, key, false);
+  p8_TrieNode **node = p8_igettrie(&table->root, key, false);
 
   if (!node)
     return NULL;
