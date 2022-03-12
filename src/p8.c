@@ -20,7 +20,7 @@
 
 #include "p8.h"
 
-#define P8_FPS_UPPER_LIMIT 200
+#define P8_FPS_UPPER_LIMIT 100
 #define P8_FPS_LOWER_LIMIT 1
 #define P8_FPS_DEFAULT 60
 
@@ -30,7 +30,6 @@ typedef struct SDL_Surface p8_Image;
 typedef struct stbtt_fontinfo p8_TrueType;
 
 typedef struct p8_Font {
-  SDL_PixelFormat *format;
   p8_TrueType *ttf;
   s32 ascent;
   s32 descent;
@@ -186,11 +185,6 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
   if (!app->renderer)
     goto error;
 
-  app->font.format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
-
-  if (!app->font.format)
-    goto error;
-
   app->ttfs = p8_table();
 
   if (!app->ttfs)
@@ -228,11 +222,6 @@ void p8_quit(void) {
   if (app->ttfs) {
     p8_tablefree(app->ttfs, (p8_Dtor)p8_ttffree);
     app->ttfs = NULL;
-  }
-
-  if (app->font.format) {
-    SDL_FreeFormat(app->font.format);
-    app->font.format = NULL;
   }
 
   SDL_Quit();
@@ -530,9 +519,9 @@ void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
     return;
   }
 
-  SDL_LockTexture(texture, NULL, &pixels, &pitch);
+  SDL_LockTexture(texture, NULL, (void **)&pixels, &pitch);
   for (i = 0; i < rect.w * rect.h; ++i)
-    pixels[i] = SDL_MapRGBA(font->format, 0xFF, 0xFF, 0xFF, bitmap[i]);
+    pixels[i] = p8_rgba(0xFF, 0xFF, 0xFF, bitmap[i]).rgba;
   SDL_UnlockTexture(texture);
   free(bitmap);
 
