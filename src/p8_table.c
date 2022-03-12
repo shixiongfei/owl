@@ -9,6 +9,8 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
+#include <stdlib.h>
+
 #include "p8.h"
 
 #define P8_TRIE_BITS 4
@@ -19,9 +21,24 @@ struct p8_Table {
   p8_Table *next[P8_TRIE_FACTOR];
 };
 
-p8_Table *p8_table(void) { return NULL; }
+p8_Table *p8_table(void) {
+  p8_Table *table = (p8_Table *)calloc(1, sizeof(p8_Table));
 
-void p8_tablefree(p8_Table *table) {}
+  if (!table)
+    return NULL;
+
+  return table;
+}
+
+void p8_tablefree(p8_Table *table) {
+  s32 i;
+
+  for (i = 0; i < P8_TRIE_FACTOR; ++i)
+    if (table->next[i])
+      p8_tablefree(table->next[i]);
+
+  free(table);
+}
 
 void *p8_settable(p8_Table *table, const char *name, void *value) {
   return NULL;
@@ -31,4 +48,4 @@ void *p8_gettable(p8_Table *table, const char *name) {
   return NULL;
 }
 
-void p8_cleartable(p8_Table *table, void (*dtor)(void *)) {}
+void p8_cleartable(p8_Table *table, p8_Dtor dtor) {}

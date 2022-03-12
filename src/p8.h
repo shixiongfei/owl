@@ -100,6 +100,7 @@ typedef struct p8_Rect {
 
 typedef struct SDL_Texture p8_Canvas;
 typedef struct p8_Table p8_Table;
+typedef void (*p8_Dtor)(void *);
 
 P8_INLINE p8_Pixel p8_rgb(u8 r, u8 g, u8 b) {
   p8_Pixel p = {r, g, b, 0xFF};
@@ -124,22 +125,17 @@ P8_API bool p8_setfps(u32 rate);
 P8_API u32 p8_getfps(void);
 P8_API u32 p8_wait(void);
 
-P8_API bool p8_loadfont(const char *name, const char *filename);
-P8_API bool p8_font(const char *name, s32 size);
-
 P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
 P8_API p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, s32 format);
 P8_API p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey);
 P8_API p8_Canvas *p8_load(const char *filename);
 P8_API p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey);
-P8_API p8_Canvas *p8_text(const char *text, s32 *w, s32 *h);
 P8_API void p8_destroy(p8_Canvas *canvas);
 
 P8_API void p8_size(p8_Canvas *canvas, s32 *w, s32 *h);
 
 P8_API void p8_clear(p8_Canvas *canvas);
 P8_API void p8_color(p8_Canvas *canvas, p8_Pixel color);
-P8_API void p8_blend(p8_Canvas *canvas, p8_Pixel color);
 
 P8_API void p8_pixel(p8_Canvas *canvas, s32 x, s32 y);
 P8_API void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n);
@@ -162,7 +158,13 @@ P8_API void p8_tablefree(p8_Table *table);
 
 P8_API void *p8_settable(p8_Table *table, const char *name, void *value);
 P8_API void *p8_gettable(p8_Table *table, const char *name);
-P8_API void p8_cleartable(p8_Table *table, void (*dtor)(void *));
+P8_API void p8_cleartable(p8_Table *table, p8_Dtor dtor);
+
+P8_API bool p8_loadfont(const char *name, const char *filename);
+P8_API bool p8_font(const char *name, s32 size, p8_Pixel color);
+P8_API void p8_text(p8_Canvas *canvas, const char *text, const p8_Rect *rect);
+P8_API void p8_drawtext(p8_Canvas *canvas, const char *text, s32 x, s32 y);
+P8_API s32 p8_textwidth(const char *text);
 
 P8_API s64 p8_filesize(const char *filename);
 P8_API u8 *p8_readfile(const char *filename);
