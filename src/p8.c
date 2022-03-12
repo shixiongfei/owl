@@ -24,7 +24,6 @@
 #define P8_FPS_LOWER_LIMIT 1
 #define P8_FPS_DEFAULT 60
 
-#define P8_PIXELFORMAT SDL_PIXELFORMAT_RGBA8888
 #define P8_BLENDMODE SDL_BLENDMODE_BLEND
 
 typedef struct SDL_Surface p8_Image;
@@ -156,30 +155,6 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
     last = ch;
   }
   return bitmap;
-}
-
-static u32 *p8_ttfpixels(p8_Font *font, const char *text, s32 *w, s32 *h) {
-  u32 i, size, *pixels;
-  u8 *bitmap;
-
-  bitmap = p8_ttfbitmap(font, text, w, h);
-
-  if (!bitmap)
-    return NULL;
-
-  size = *w * *h;
-  pixels = (u32 *)calloc(1, size * sizeof(Uint32));
-
-  if (!pixels) {
-    free(bitmap);
-    return NULL;
-  }
-
-  for (i = 0; i < size; ++i)
-    pixels[i] = SDL_MapRGBA(font->format, 0xFF, 0xFF, 0xFF, bitmap[i]);
-
-  free(bitmap);
-  return pixels;
 }
 
 u64 p8_ticks(void) {
@@ -323,9 +298,8 @@ u32 p8_wait(void) {
 }
 
 p8_Canvas *p8_canvas(s32 w, s32 h) {
-  s32 format = P8_PIXELFORMAT;
-  s32 access = SDL_TEXTUREACCESS_TARGET;
-  p8_Canvas *canvas = SDL_CreateTexture(app->renderer, format, access, w, h);
+  p8_Canvas *canvas = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
+                                        SDL_TEXTUREACCESS_TARGET, w, h);
 
   if (!canvas)
     return NULL;
@@ -335,11 +309,25 @@ p8_Canvas *p8_canvas(s32 w, s32 h) {
   return canvas;
 }
 
-static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, s32 channel) {
-  s32 d = channel * 8;
-  s32 p = channel * w;
-  s32 f = (channel == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
-                                     : SDL_PIXELFORMAT_RGBA32;
+static p8_Canvas *p8_dynamic(s32 w, s32 h, s32 format) {
+  s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
+                                    : SDL_PIXELFORMAT_RGBA32;
+  s32 a = SDL_TEXTUREACCESS_STREAMING;
+  p8_Canvas *canvas = SDL_CreateTexture(app->renderer, f, a, w, h);
+
+  if (!canvas)
+    return NULL;
+
+  SDL_SetTextureBlendMode(canvas, P8_BLENDMODE);
+
+  return canvas;
+}
+
+static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, s32 format) {
+  s32 d = format * 8;
+  s32 p = format * w;
+  s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
+                                    : SDL_PIXELFORMAT_RGBA32;
   return SDL_CreateRGBSurfaceWithFormatFrom((void *)data, w, h, d, p, f);
 }
 
@@ -523,25 +511,30 @@ void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
   p8_Font *font = &app->font;
   p8_Rect rect = {x, y, -1, -1};
   p8_Canvas *texture;
+  s32 i, pitch;
   u32 *pixels;
+  u8 *bitmap;
 
   if (!font)
     return;
 
-  pixels = p8_ttfpixels(font, text, &rect.w, &rect.h);
+  bitmap = p8_ttfbitmap(font, text, &rect.w, &rect.h);
 
-  if (!pixels)
+  if (!bitmap)
     return;
 
-  texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
-                              SDL_TEXTUREACCESS_STATIC, rect.w, rect.h);
+  texture = p8_dynamic(rect.w, rect.h, P8_FORMAT_RGBA);
+
   if (!texture) {
-    free(pixels);
+    free(bitmap);
     return;
   }
 
-  SDL_UpdateTexture(texture, NULL, pixels, rect.w * P8_FORMAT_RGBA);
-  free(pixels);
+  SDL_LockTexture(texture, NULL, &pixels, &pitch);
+  for (i = 0; i < rect.w * rect.h; ++i)
+    pixels[i] = SDL_MapRGBA(font->format, 0xFF, 0xFF, 0xFF, bitmap[i]);
+  SDL_UnlockTexture(texture);
+  free(bitmap);
 
   SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
   SDL_SetTextureAlphaMod(texture, color.a);
