@@ -36,7 +36,6 @@ typedef struct stbtt_fontinfo p8_TrueType;
 typedef struct p8_Font {
   SDL_PixelFormat *format;
   p8_TrueType *ttf;
-  p8_Pixel color;
   s32 ascent;
   s32 descent;
   s32 linegap;
@@ -498,7 +497,7 @@ bool p8_loadfont(const char *name, const char *filename) {
   return true;
 }
 
-bool p8_font(const char *name, s32 size, p8_Pixel color) {
+bool p8_font(const char *name, s32 size) {
   p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
   s32 ascent, descent, linegap;
 
@@ -510,7 +509,6 @@ bool p8_font(const char *name, s32 size, p8_Pixel color) {
   stbtt_GetFontVMetrics(ttf, &ascent, &descent, &linegap);
 
   app->font.ttf = ttf;
-  app->font.color = color;
   app->font.ascent = ascent;
   app->font.descent = descent;
   app->font.linegap = linegap;
@@ -521,66 +519,36 @@ bool p8_font(const char *name, s32 size, p8_Pixel color) {
   return true;
 }
 
-void p8_text(p8_Canvas *canvas, const char *text, const p8_Rect *rect) {
+void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
+             p8_Pixel color) {
   p8_Font *font = &app->font;
-  p8_Rect font_rect = {0, 0, -1, -1};
-  p8_Canvas *font_texture;
-  p8_Pixel color;
-  s32 w, h;
+  p8_Rect rect = {x, y, -1, -1};
+  p8_Canvas *texture;
   u32 *pixels;
 
   if (!font)
     return;
 
-  color = font->color;
-  pixels = p8_ttfpixels(font, text, &w, &h);
+  pixels = p8_ttfpixels(font, text, &rect.w, &rect.h);
 
   if (!pixels)
     return;
 
-  font_texture = SDL_CreateTexture(app->renderer, P8_PIXELFORMAT,
-                                   SDL_TEXTUREACCESS_STATIC, w, h);
-
-  if (!font_texture) {
+  texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
+                              SDL_TEXTUREACCESS_STATIC, rect.w, rect.h);
+  if (!texture) {
     free(pixels);
     return;
   }
 
-  SDL_UpdateTexture(font_texture, NULL, pixels, w * P8_FORMAT_RGBA);
+  SDL_UpdateTexture(texture, NULL, pixels, rect.w * P8_FORMAT_RGBA);
   free(pixels);
 
-  font_rect.w = w;
-  font_rect.h = h;
+  SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
+  SDL_SetTextureAlphaMod(texture, color.a);
 
-  if (rect) {
-    p8_Rect clip_rect = *rect;
-
-    font_rect.x = clip_rect.x;
-    font_rect.y = clip_rect.y;
-
-    if (clip_rect.w < 0)
-      clip_rect.w = w;
-
-    if (clip_rect.h < 0)
-      clip_rect.h = h;
-
-    p8_clip(canvas, &clip_rect);
-  }
-
-  SDL_SetTextureColorMod(font_texture, color.r, color.g, color.b);
-  SDL_SetTextureAlphaMod(font_texture, color.a);
-
-  p8_blit(canvas, font_texture, NULL, &font_rect);
-
-  if (rect)
-    p8_clip(canvas, NULL);
-
-  p8_destroy(font_texture);
-}
-
-void p8_drawtext(p8_Canvas *canvas, const char *text, s32 x, s32 y) {
-  p8_Rect rect = {x, y, -1, -1};
-  p8_text(canvas, text, &rect);
+  p8_blit(canvas, texture, NULL, &rect);
+  p8_destroy(texture);
 }
 
 s32 p8_textwidth(const char *text) {

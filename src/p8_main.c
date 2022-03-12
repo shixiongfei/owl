@@ -65,9 +65,12 @@ int p8_main(int argc, char *argv[]) {
 
     p8_blit(screen, hero, NULL, &hero_pos);
 
-    if (p8_font("宋体", 18, p8_rgb(0xff, 0, 0))) {
-      p8_drawtext(screen, text, 200, 20);
-      p8_text(screen, text, &clip_text);
+    if (p8_font("宋体", 18)) {
+      p8_text(screen, text, 200, 20, p8_rgb(0xff, 0, 0));
+
+      p8_clip(screen, &clip_text);
+      p8_text(screen, text, clip_text.x, clip_text.y, p8_rgb(0, 0xff, 0xff));
+      p8_clip(screen, NULL);
     }
 
     p8_present(screen);
