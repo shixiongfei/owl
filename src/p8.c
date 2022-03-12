@@ -37,8 +37,8 @@ typedef struct p8_Font {
   s32 descent;
   s32 linegap;
   f32 scale;
-  s32 baseline;
-  s32 height;
+  f32 baseline;
+  f32 height;
 } p8_Font;
 
 typedef struct p8_Window {
@@ -101,7 +101,7 @@ static f32 p8_ttfwide(p8_Font *font, ucs4_t ch, ucs4_t last) {
   return (ax + kern) * font->scale;
 }
 
-static s32 p8_ttfwidth(p8_Font *font, const char *text) {
+static f32 p8_ttfwidth(p8_Font *font, const char *text) {
   const char *p = text;
   f32 width = 0;
   ucs4_t ch, last = 0;
@@ -111,7 +111,7 @@ static s32 p8_ttfwidth(p8_Font *font, const char *text) {
     width += p8_ttfwide(font, ch, last);
     last = ch;
   }
-  return (s32)ceil(width);
+  return ceilf(width);
 }
 
 static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
@@ -125,8 +125,8 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
   if (!ttf)
     return NULL;
 
-  *w = p8_ttfwidth(font, text);
-  *h = font->height;
+  *w = (s32)p8_ttfwidth(font, text);
+  *h = (s32)font->height;
 
   bitmap = (u8 *)calloc(1, *w * *h);
 
@@ -139,7 +139,7 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
     stbtt_GetCodepointBitmapBoxSubpixel(ttf, ch, font->scale, font->scale,
                                         xfract, 0, &x1, &y1, &x2, &y2);
     x = (s32)(xoff + x1);
-    y = font->baseline + y1;
+    y = (s32)(font->baseline + y1);
 
     if (x < 0)
       x = 0;
@@ -222,6 +222,7 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
     goto error;
 
   SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
   SDL_DisableScreenSaver();
 
   app->quit = 0;
@@ -250,8 +251,7 @@ void p8_quit(void) {
   }
 
   if (app->ttfs) {
-    p8_cleartable(app->ttfs, (p8_Dtor)p8_ttffree);
-    p8_tablefree(app->ttfs);
+    p8_tablefree(app->ttfs, (p8_Dtor)p8_ttffree);
     app->ttfs = NULL;
   }
 
@@ -474,10 +474,17 @@ void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                  (const SDL_Rect *)dstrect);
 }
 
+void p8_blitex(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
+               const p8_Rect *dstrect, f64 angle, const p8_Point *center,
+               u32 flip) {
+  SDL_SetRenderTarget(app->renderer, canvas);
+  SDL_RenderCopyEx(app->renderer, src, (const SDL_Rect *)srcrect,
+                   (const SDL_Rect *)dstrect, angle, (const SDL_Point *)center,
+                   flip);
+}
+
 bool p8_loadfont(const char *name, const char *filename) {
   p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
-
-  ttf = app->font.ttf; // TODO: pending delete
 
   if (ttf)
     return true;
@@ -488,17 +495,12 @@ bool p8_loadfont(const char *name, const char *filename) {
     return false;
 
   p8_settable(app->ttfs, name, ttf);
-
-  app->font.ttf = ttf; // TODO: pending delete
-
   return true;
 }
 
 bool p8_font(const char *name, s32 size) {
   p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
   s32 ascent, descent, linegap;
-
-  ttf = app->font.ttf; // TODO: pending delete
 
   if (!ttf)
     return false;
@@ -510,8 +512,8 @@ bool p8_font(const char *name, s32 size) {
   app->font.descent = descent;
   app->font.linegap = linegap;
   app->font.scale = stbtt_ScaleForMappingEmToPixels(ttf, (f32)size);
-  app->font.baseline = (s32)(ascent * app->font.scale);
-  app->font.height = (s32)ceil((ascent - descent) * app->font.scale);
+  app->font.baseline = ceilf(ascent * app->font.scale);
+  app->font.height = ceilf((ascent - descent) * app->font.scale);
 
   return true;
 }
@@ -554,7 +556,7 @@ s32 p8_textwidth(const char *text) {
   if (!font)
     return -1;
 
-  return p8_ttfwidth(font, text);
+  return (s32)p8_ttfwidth(font, text);
 }
 
 extern int p8_main(int argc, char *argv[]);

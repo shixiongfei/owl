@@ -98,6 +98,10 @@ typedef struct p8_Rect {
 #define P8_FORMAT_RGB 3
 #define P8_FORMAT_RGBA 4
 
+#define P8_FLIP_NONE 0
+#define P8_FLIP_HORIZONTAL 1
+#define P8_FLIP_VERTICAL 2
+
 typedef struct SDL_Texture p8_Canvas;
 typedef struct p8_Table p8_Table;
 typedef void (*p8_Dtor)(void *);
@@ -152,13 +156,18 @@ P8_API void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
 P8_API void p8_clip(p8_Canvas *canvas, const p8_Rect *rect);
 P8_API void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                     const p8_Rect *dstrect);
+P8_API void p8_blitex(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
+                      const p8_Rect *dstrect, f64 angle, const p8_Point *center,
+                      u32 flip);
 
 P8_API p8_Table *p8_table(void);
-P8_API void p8_tablefree(p8_Table *table);
-
+P8_API void p8_tablefree(p8_Table *table, p8_Dtor dtor);
+P8_API void p8_cleartable(p8_Table *table, p8_Dtor dtor);
+P8_API s32 p8_tablesize(p8_Table *table);
 P8_API void *p8_settable(p8_Table *table, const char *name, void *value);
 P8_API void *p8_gettable(p8_Table *table, const char *name);
-P8_API void p8_cleartable(p8_Table *table, p8_Dtor dtor);
+P8_API void *p8_isettable(p8_Table *table, u64 key, void *value);
+P8_API void *p8_igettable(p8_Table *table, u64 key);
 
 P8_API bool p8_loadfont(const char *name, const char *filename);
 P8_API bool p8_font(const char *name, s32 size);
