@@ -39,6 +39,13 @@ typedef struct p8_Font {
   f32 height;
 } p8_Font;
 
+typedef struct p8_Sound {
+  SDL_AudioDeviceID device;
+  SDL_AudioSpec spec;
+  u8 *buffer;
+  u32 length;
+} p8_Sound;
+
 typedef struct p8_Window {
   bool quit;
 
@@ -53,6 +60,8 @@ typedef struct p8_Window {
 
   p8_Table *ttfs;
   p8_Font font;
+
+  p8_Table *sounds;
 } p8_Window;
 
 static p8_Window p8_app = {0};
@@ -156,6 +165,24 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
   return bitmap;
 }
 
+static p8_Sound *p8_loadwav(const char *filename) {
+  p8_Sound *sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+
+  if (!SDL_LoadWAV(filename, &sound->spec, &sound->buffer, &sound->length)) {
+    free(sound);
+    return NULL;
+  }
+  return sound;
+}
+
+static void p8_soundfree(p8_Sound *sound) {
+  if (sound->device)
+    SDL_CloseAudioDevice(sound->device);
+
+  SDL_FreeWAV(sound->buffer);
+  free(sound);
+}
+
 u64 p8_ticks(void) {
   u64 ticks = SDL_GetTicks64();
   return ticks > 0 ? ticks : 1;
@@ -164,18 +191,13 @@ u64 p8_ticks(void) {
 void p8_sleep(u32 ms) { SDL_Delay(ms); }
 
 bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
-  s32 x, y, window_flags, renderer_flags;
-
-  x = SDL_WINDOWPOS_CENTERED;
-  y = SDL_WINDOWPOS_CENTERED;
-
-  window_flags = SDL_WINDOW_ALLOW_HIGHDPI;
-  renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
+  s32 x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
+  s32 renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
 
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     goto error;
 
-  app->window = SDL_CreateWindow(title, x, y, w, h, window_flags);
+  app->window = SDL_CreateWindow(title, x, y, w, h, SDL_WINDOW_ALLOW_HIGHDPI);
 
   if (!app->window)
     goto error;
@@ -188,6 +210,11 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
   app->ttfs = p8_table();
 
   if (!app->ttfs)
+    goto error;
+
+  app->sounds = p8_table();
+
+  if (!app->sounds)
     goto error;
 
   SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
@@ -222,6 +249,11 @@ void p8_quit(void) {
   if (app->ttfs) {
     p8_tablefree(app->ttfs, (p8_Dtor)p8_ttffree);
     app->ttfs = NULL;
+  }
+
+  if (app->sounds) {
+    p8_tablefree(app->sounds, (p8_Dtor)p8_soundfree);
+    app->sounds = NULL;
   }
 
   SDL_Quit();
@@ -539,6 +571,38 @@ s32 p8_textwidth(const char *text) {
     return -1;
 
   return (s32)p8_ttfwidth(font, text);
+}
+
+bool p8_loadsound(const char *name, const char *filename) {
+  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+
+  if (sound)
+    return true;
+
+  sound = p8_loadwav(filename);
+
+  if (!sound)
+    return false;
+
+  p8_settable(app->sounds, name, sound);
+  return true;
+}
+
+void p8_play(const char *name) {
+  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+
+  if (!sound)
+    return;
+
+  if (!sound->device) {
+    sound->device = SDL_OpenAudioDevice(NULL, 0, &sound->spec, NULL, 0);
+
+    if (sound->device)
+      SDL_PauseAudioDevice(sound->device, 0);
+  }
+
+  if (sound->device)
+    SDL_QueueAudio(sound->device, sound->buffer, sound->length);
 }
 
 extern int p8_main(int argc, char *argv[]);

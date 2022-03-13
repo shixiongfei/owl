@@ -124,12 +124,14 @@ static p8_TrieNode **p8_igettrie(p8_TrieNode **root, u64 key, bool build) {
 }
 
 p8_Table *p8_table(void) {
-  p8_Table *table = (p8_Table *)calloc(1, sizeof(p8_Table));
+  p8_Table *table = (p8_Table *)malloc(sizeof(p8_Table));
 
   if (!table)
     return NULL;
 
+  table->count = 0;
   table->root = p8_trie();
+
   return table;
 }
 

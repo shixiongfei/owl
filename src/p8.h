@@ -175,6 +175,9 @@ P8_API void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
                     p8_Pixel color);
 P8_API s32 p8_textwidth(const char *text);
 
+P8_API bool p8_loadsound(const char *name, const char *filename);
+P8_API void p8_play(const char *name);
+
 P8_API s64 p8_filesize(const char *filename);
 P8_API u8 *p8_readfile(const char *filename);
 

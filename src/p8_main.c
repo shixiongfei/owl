@@ -36,6 +36,12 @@ int p8_main(int argc, char *argv[]) {
 
   p8_loadfont("宋体", "./simsun.ttc");
 
+  p8_loadsound("coin1", "./coin1.wav");
+  p8_loadsound("coin2", "./coin2.wav");
+
+  p8_play("coin1");
+  p8_play("coin2");
+
   hero = p8_loadex("hero.bmp", p8_rgb(0xff, 0, 0xff));
 
   hero_pos.x = 20;
