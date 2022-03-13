@@ -186,6 +186,11 @@ static SDL_AudioDeviceID p8_openaudio(const SDL_AudioSpec *spec) {
   return device;
 }
 
+static void p8_closeaudio(SDL_AudioDeviceID device) {
+  SDL_ClearQueuedAudio(device);
+  SDL_CloseAudioDevice(device);
+}
+
 static p8_Sound *p8_loadwav(const char *filename) {
   p8_Sound *sound;
   SDL_AudioSpec spec;
@@ -215,13 +220,13 @@ static p8_Sound *p8_loadflac(const char *filename) {
   u32 channels, sample_rate;
   u64 num_samples;
   s32 *samples;
-  
+
   samples = drflac_open_file_and_read_pcm_frames_s32(
       filename, &channels, &sample_rate, &num_samples, NULL);
 
   if (!samples)
     return NULL;
-  
+
   sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
 
   if (!sound) {
@@ -292,7 +297,7 @@ static p8_Sound *p8_sound(const char *filename) {
 
 static void p8_soundfree(p8_Sound *sound) {
   if (sound->device)
-    SDL_CloseAudioDevice(sound->device);
+    p8_closeaudio(sound->device);
 
   switch (sound->type) {
   case P8_SOUND_WAV:
@@ -518,10 +523,10 @@ p8_Canvas *p8_load(const char *filename) {
   p8_Canvas *canvas;
   s32 w, h, format;
   u8 *data;
-  
+
   if (!filename)
     return NULL;
-  
+
   data = stbi_load(filename, &w, &h, &format, 0);
 
   if (!data)
@@ -762,7 +767,7 @@ bool p8_stop(const char *name) {
   if (!sound || !sound->device)
     return false;
 
-  SDL_CloseAudioDevice(sound->device);
+  p8_closeaudio(sound->device);
   sound->device = 0;
 
   return true;
