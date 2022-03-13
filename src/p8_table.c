@@ -78,7 +78,7 @@ static p8_TrieNode **p8_gettrie(p8_TrieNode **root, const char *name,
   u8 ch, lo, hi;
 
   if (!name)
-    return node;
+    return NULL;
 
   while (!!(ch = *p++)) {
     lo = ch & P8_TRIE_MASK;

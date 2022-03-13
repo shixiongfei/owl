@@ -38,9 +38,13 @@ int p8_main(int argc, char *argv[]) {
 
   p8_loadsound("coin1", "./coin1.wav");
   p8_loadsound("coin2", "./coin2.wav");
+  p8_loadsound("testmp3", "./test.mp3");
+  p8_loadsound("ghsy", "./ghsy.flac");
 
   p8_play("coin1");
   p8_play("coin2");
+  p8_play("ghsy");
+  s32 i = 0;
 
   hero = p8_loadex("hero.bmp", p8_rgb(0xff, 0, 0xff));
 
@@ -50,6 +54,11 @@ int p8_main(int argc, char *argv[]) {
 
   while (!p8_closed()) {
     p8_events();
+
+    if (!i && !p8_playing("ghsy")) {
+      i++;
+      p8_play("testmp3");
+    }
 
     p8_color(screen, p8_rgb(0, 0, 0));
     p8_clear(screen);

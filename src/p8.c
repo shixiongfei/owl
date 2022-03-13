@@ -18,6 +18,12 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
+#define DR_FLAC_IMPLEMENTATION
+#include "dr_flac.h"
+
+#define DR_MP3_IMPLEMENTATION
+#include "dr_mp3.h"
+
 #include "p8.h"
 
 #define P8_FPS_UPPER_LIMIT 100
@@ -25,6 +31,11 @@
 #define P8_FPS_DEFAULT 60
 
 #define P8_BLENDMODE SDL_BLENDMODE_BLEND
+
+#define P8_SOUND_NONE 0
+#define P8_SOUND_WAV 1
+#define P8_SOUND_FLAC 2
+#define P8_SOUND_MP3 3
 
 typedef struct SDL_Surface p8_Image;
 typedef struct stbtt_fontinfo p8_TrueType;
@@ -42,8 +53,9 @@ typedef struct p8_Font {
 typedef struct p8_Sound {
   SDL_AudioDeviceID device;
   SDL_AudioSpec spec;
+  u32 type;
+  u32 size;
   u8 *buffer;
-  u32 length;
 } p8_Sound;
 
 typedef struct p8_Window {
@@ -165,21 +177,135 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
   return bitmap;
 }
 
-static p8_Sound *p8_loadwav(const char *filename) {
-  p8_Sound *sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+static SDL_AudioDeviceID p8_openaudio(const SDL_AudioSpec *spec) {
+  SDL_AudioDeviceID device = SDL_OpenAudioDevice(NULL, 0, spec, NULL, 0);
 
-  if (!SDL_LoadWAV(filename, &sound->spec, &sound->buffer, &sound->length)) {
-    free(sound);
+  if (device)
+    SDL_PauseAudioDevice(device, 0);
+
+  return device;
+}
+
+static p8_Sound *p8_loadwav(const char *filename) {
+  p8_Sound *sound;
+  SDL_AudioSpec spec;
+  u8 *wav;
+  u32 size;
+
+  if (!SDL_LoadWAV(filename, &spec, &wav, &size))
+    return NULL;
+
+  sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+
+  if (!sound) {
+    SDL_FreeWAV(wav);
     return NULL;
   }
+
+  sound->type = P8_SOUND_WAV;
+  sound->spec = spec;
+  sound->buffer = wav;
+  sound->size = size;
+
   return sound;
+}
+
+static p8_Sound *p8_loadflac(const char *filename) {
+  p8_Sound *sound;
+  u32 channels, sample_rate;
+  u64 num_samples;
+  s32 *samples;
+  
+  samples = drflac_open_file_and_read_pcm_frames_s32(
+      filename, &channels, &sample_rate, &num_samples, NULL);
+
+  if (!samples)
+    return NULL;
+  
+  sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+
+  if (!sound) {
+    drflac_free(samples, NULL);
+    return NULL;
+  }
+
+  sound->type = P8_SOUND_FLAC;
+  sound->spec.freq = sample_rate;
+  sound->spec.channels = channels;
+  sound->spec.format = AUDIO_S32SYS;
+  sound->spec.samples = 4096;
+  sound->buffer = (u8 *)samples;
+  sound->size = (u32)(num_samples * channels * sizeof(s32));
+
+  return sound;
+}
+
+static p8_Sound *p8_loadmp3(const char *filename) {
+  p8_Sound *sound;
+  drmp3_config mp3;
+  u64 num_samples;
+  s16 *samples;
+
+  samples = drmp3_open_file_and_read_pcm_frames_s16(filename, &mp3,
+                                                    &num_samples, NULL);
+  if (!samples)
+    return NULL;
+
+  sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+
+  if (!sound) {
+    drmp3_free(samples, NULL);
+    return NULL;
+  }
+
+  sound->type = P8_SOUND_MP3;
+  sound->spec.freq = mp3.sampleRate;
+  sound->spec.channels = mp3.channels;
+  sound->spec.format = AUDIO_S16SYS;
+  sound->spec.samples = 4096;
+  sound->buffer = (u8 *)samples;
+  sound->size = (u32)(num_samples * mp3.channels * sizeof(s16));
+
+  return sound;
+}
+
+static p8_Sound *p8_sound(const char *filename) {
+  p8_Sound *sound;
+
+  sound = p8_loadwav(filename);
+
+  if (sound)
+    return sound;
+
+  sound = p8_loadflac(filename);
+
+  if (sound)
+    return sound;
+
+  sound = p8_loadmp3(filename);
+
+  if (sound)
+    return sound;
+
+  return NULL;
 }
 
 static void p8_soundfree(p8_Sound *sound) {
   if (sound->device)
     SDL_CloseAudioDevice(sound->device);
 
-  SDL_FreeWAV(sound->buffer);
+  switch (sound->type) {
+  case P8_SOUND_WAV:
+    SDL_FreeWAV(sound->buffer);
+    break;
+  case P8_SOUND_FLAC:
+    drflac_free(sound->buffer, NULL);
+    break;
+  case P8_SOUND_MP3:
+    drmp3_free(sound->buffer, NULL);
+    break;
+  }
+
   free(sound);
 }
 
@@ -321,7 +447,6 @@ u32 p8_wait(void) {
 p8_Canvas *p8_canvas(s32 w, s32 h) {
   p8_Canvas *canvas = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
                                         SDL_TEXTUREACCESS_TARGET, w, h);
-
   if (!canvas)
     return NULL;
 
@@ -349,6 +474,9 @@ static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, s32 format) {
   s32 p = format * w;
   s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
                                     : SDL_PIXELFORMAT_RGBA32;
+  if (!data)
+    return NULL;
+
   return SDL_CreateRGBSurfaceWithFormatFrom((void *)data, w, h, d, p, f);
 }
 
@@ -389,7 +517,12 @@ p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey) {
 p8_Canvas *p8_load(const char *filename) {
   p8_Canvas *canvas;
   s32 w, h, format;
-  u8 *data = stbi_load(filename, &w, &h, &format, 0);
+  u8 *data;
+  
+  if (!filename)
+    return NULL;
+  
+  data = stbi_load(filename, &w, &h, &format, 0);
 
   if (!data)
     return NULL;
@@ -403,7 +536,12 @@ p8_Canvas *p8_load(const char *filename) {
 p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
   p8_Canvas *canvas;
   s32 w, h, format;
-  u8 *data = stbi_load(filename, &w, &h, &format, 0);
+  u8 *data;
+
+  if (!filename)
+    return NULL;
+
+  data = stbi_load(filename, &w, &h, &format, 0);
 
   if (!data)
     return NULL;
@@ -498,6 +636,9 @@ bool p8_loadfont(const char *name, const char *filename) {
   if (ttf)
     return true;
 
+  if (!filename)
+    return false;
+
   ttf = p8_loadttf(filename);
 
   if (!ttf)
@@ -536,7 +677,7 @@ void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
   u32 *pixels;
   u8 *bitmap;
 
-  if (!font)
+  if (!text)
     return;
 
   bitmap = p8_ttfbitmap(font, text, &rect.w, &rect.h);
@@ -567,7 +708,7 @@ void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
 s32 p8_textwidth(const char *text) {
   p8_Font *font = &app->font;
 
-  if (!font)
+  if (!text)
     return -1;
 
   return (s32)p8_ttfwidth(font, text);
@@ -579,7 +720,10 @@ bool p8_loadsound(const char *name, const char *filename) {
   if (sound)
     return true;
 
-  sound = p8_loadwav(filename);
+  if (!filename)
+    return false;
+
+  sound = p8_sound(filename);
 
   if (!sound)
     return false;
@@ -588,21 +732,60 @@ bool p8_loadsound(const char *name, const char *filename) {
   return true;
 }
 
-void p8_play(const char *name) {
+bool p8_playing(const char *name) {
+  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+
+  if (!sound || !sound->device)
+    return false;
+
+  return SDL_GetQueuedAudioSize(sound->device) > 0;
+}
+
+bool p8_play(const char *name) {
   p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
 
   if (!sound)
-    return;
+    return false;
 
-  if (!sound->device) {
-    sound->device = SDL_OpenAudioDevice(NULL, 0, &sound->spec, NULL, 0);
+  if (!sound->device)
+    sound->device = p8_openaudio(&sound->spec);
 
-    if (sound->device)
-      SDL_PauseAudioDevice(sound->device, 0);
-  }
+  if (!sound->device)
+    return false;
 
-  if (sound->device)
-    SDL_QueueAudio(sound->device, sound->buffer, sound->length);
+  return 0 == SDL_QueueAudio(sound->device, sound->buffer, sound->size);
+}
+
+bool p8_stop(const char *name) {
+  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+
+  if (!sound || !sound->device)
+    return false;
+
+  SDL_CloseAudioDevice(sound->device);
+  sound->device = 0;
+
+  return true;
+}
+
+bool p8_pause(const char *name) {
+  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+
+  if (!sound || !sound->device)
+    return false;
+
+  SDL_PauseAudioDevice(sound->device, 1);
+  return true;
+}
+
+bool p8_resume(const char *name) {
+  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+
+  if (!sound || !sound->device)
+    return false;
+
+  SDL_PauseAudioDevice(sound->device, 0);
+  return true;
 }
 
 extern int p8_main(int argc, char *argv[]);
