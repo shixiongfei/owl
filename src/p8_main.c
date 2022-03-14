@@ -48,12 +48,13 @@ int p8_main(int argc, char *argv[]) {
   p8_size(hero, &hero_pos.w, &hero_pos.h);
 
   p8_textinput(true);
-  //p8_textinputrect(&rect);
+  // https://github.com/libsdl-org/SDL/issues/4154
+  p8_textinputrect(&rect);
 
   while (!quit) {
     p8_tickupdate();
 
-    p8_color(screen, p8_rgb(0xff, 0xff, 0xff));
+    p8_color(screen, p8_rgb(0, 0, 0));
     p8_clear(screen);
 
     p8_color(screen, p8_rgb(0xff, 0, 0xff));
