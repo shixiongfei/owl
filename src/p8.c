@@ -391,14 +391,80 @@ void p8_quit(void) {
 
 bool p8_closed(void) { return app->quit; }
 
-void p8_events(p8_Event cb) {
+void p8_events(p8_EventHandler handler) {
   SDL_Event event;
 
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
     case SDL_QUIT:
-      app->quit = cb ? cb(P8_EVENT_QUIT, 0, 0, 0) : 1;
+      app->quit = handler ? handler(P8_EVENT_QUIT, 0, 0, 0, 0) : 1;
       break;
+
+    case SDL_KEYDOWN:
+      if (handler)
+        handler(P8_EVENT_KEYDOWN, event.key.keysym.scancode, 0, 0, 0);
+      break;
+ 
+    case SDL_KEYUP:
+      if (handler)
+        handler(P8_EVENT_KEYUP, event.key.keysym.scancode, 0, 0, 0);
+      break;
+
+    case SDL_MOUSEMOTION:
+      if (handler && event.motion.which != SDL_TOUCH_MOUSEID) {
+        u64 xy = event.motion.x;
+        u64 xyrel = event.motion.xrel;
+
+        xy = xy << 32 | event.motion.y;
+        xyrel = xyrel << 32 | event.motion.yrel;
+
+        handler(P8_EVENT_MOUSEMOVE, xy, xyrel, event.motion.state, 0);
+      }
+      break;
+
+    case SDL_MOUSEBUTTONDOWN:
+      if (handler && event.button.which != SDL_TOUCH_MOUSEID) {
+        u64 xy = event.button.x;
+        u64 state = event.button.clicks;
+
+        xy = xy << 32 | event.button.y;
+        state = state << 32 | event.button.button;
+
+        handler(P8_EVENT_MOUSEDOWN, xy, state, 0, 0);
+      }
+      break;
+
+    case SDL_MOUSEBUTTONUP:
+      if (handler && event.button.which != SDL_TOUCH_MOUSEID) {
+        u64 xy = event.button.x;
+        u64 state = event.button.clicks;
+
+        xy = xy << 32 | event.button.y;
+        state = state << 32 | event.button.button;
+
+        handler(P8_EVENT_MOUSEUP, xy, state, 0, 0);
+      }
+      break;
+
+    case SDL_MOUSEWHEEL:
+      if (handler && event.button.which != SDL_TOUCH_MOUSEID) {
+        u64 xy = event.wheel.x;
+
+        xy = xy << 32 | event.wheel.y;
+
+        handler(P8_EVENT_MOUSEWHEEL, xy, 0, 0, 0);
+      }
+      break;
+
+    case SDL_FINGERDOWN:
+      break;
+
+    case SDL_FINGERUP:
+      break;
+
+    case SDL_FINGERMOTION:
+      break;
+
     default:
       break;
     }
