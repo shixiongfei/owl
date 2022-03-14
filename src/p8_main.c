@@ -53,7 +53,7 @@ int p8_main(int argc, char *argv[]) {
   p8_size(hero, &hero_pos.w, &hero_pos.h);
 
   while (!p8_closed()) {
-    p8_events();
+    p8_events(NULL);
 
     if (!i && !p8_playing("ghsy")) {
       i++;

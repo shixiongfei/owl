@@ -64,6 +64,10 @@ typedef struct p8_Window {
   SDL_Window *window;
   SDL_Renderer *renderer;
 
+  u8 *kstates;
+  u32 mstates;
+  s32 mx, my;
+
   u32 rate;
   u32 framecount;
   f32 rateticks;
@@ -392,7 +396,7 @@ void p8_quit(void) {
 
 bool p8_closed(void) { return app->quit; }
 
-void p8_events(void) {
+void p8_events(p8_Events cb) {
   SDL_Event event;
 
   while (SDL_PollEvent(&event)) {
@@ -404,6 +408,11 @@ void p8_events(void) {
       break;
     }
   }
+
+  SDL_PumpEvents();
+
+  app->kstates = (u8 *)SDL_GetKeyboardState(NULL);
+  app->mstates = SDL_GetMouseState(&app->mx, &app->my);
 }
 
 void p8_present(p8_Canvas *screen) {
@@ -448,6 +457,18 @@ u32 p8_wait(void) {
 
   return time_passed;
 }
+
+u32 p8_mouse(s32 *x, s32 *y) {
+  if (x)
+    *x = app->mx;
+
+  if (y)
+    *y = app->my;
+
+  return app->mstates;
+}
+
+bool p8_pressed(u32 key) { return (bool)app->kstates[key]; }
 
 p8_Canvas *p8_canvas(s32 w, s32 h) {
   p8_Canvas *canvas = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
