@@ -59,7 +59,7 @@
 #define P8_BSD 1
 #endif
 
-#include "p8_keys.h"
+#include "p8_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,7 +107,7 @@ typedef struct p8_Rect {
 typedef struct SDL_Texture p8_Canvas;
 typedef struct p8_Table p8_Table;
 typedef void (*p8_Dtor)(void *);
-typedef void (*p8_Events)();
+typedef s32 (*p8_Event)(u32 event, u64 a, u64 b, uword_t p);
 
 P8_INLINE p8_Pixel p8_rgb(u8 r, u8 g, u8 b) {
   p8_Pixel p = {r, g, b, 0xFF};
@@ -125,7 +125,7 @@ P8_API void p8_sleep(u32 ms);
 P8_API bool p8_init(s32 w, s32 h, const char *title, s32 flags);
 P8_API void p8_quit(void);
 P8_API bool p8_closed(void);
-P8_API void p8_events(p8_Events cb);
+P8_API void p8_events(p8_Event cb);
 P8_API void p8_present(p8_Canvas *screen);
 
 P8_API bool p8_setfps(u32 rate);

@@ -396,13 +396,13 @@ void p8_quit(void) {
 
 bool p8_closed(void) { return app->quit; }
 
-void p8_events(p8_Events cb) {
+void p8_events(p8_Event cb) {
   SDL_Event event;
 
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
     case SDL_QUIT:
-      app->quit = 1;
+      app->quit = cb ? cb(P8_EVENT_QUIT, 0, 0, 0) : 1;
       break;
     default:
       break;
