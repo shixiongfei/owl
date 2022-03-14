@@ -767,9 +767,7 @@ bool p8_stop(const char *name) {
   if (!sound || !sound->device)
     return false;
 
-  p8_closeaudio(sound->device);
-  sound->device = 0;
-
+  SDL_ClearQueuedAudio(sound->device);
   return true;
 }
 
