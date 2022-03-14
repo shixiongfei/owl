@@ -59,14 +59,8 @@ typedef struct p8_Sound {
 } p8_Sound;
 
 typedef struct p8_Window {
-  bool quit;
-
   SDL_Window *window;
   SDL_Renderer *renderer;
-
-  u8 *kstates;
-  u32 mstates;
-  s32 mx, my;
 
   u32 rate;
   u32 framecount;
@@ -349,9 +343,9 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
 
   SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+  SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
   SDL_DisableScreenSaver();
 
-  app->quit = 0;
   app->framecount = 0;
   app->rate = P8_FPS_DEFAULT;
   app->rateticks = 1000.0f / (f32)P8_FPS_DEFAULT;
@@ -389,98 +383,7 @@ void p8_quit(void) {
   SDL_Quit();
 }
 
-bool p8_closed(void) { return app->quit; }
-
-void p8_events(p8_EventHandler handler) {
-  SDL_Event event;
-
-  while (SDL_PollEvent(&event)) {
-    switch (event.type) {
-    case SDL_QUIT:
-      app->quit = handler ? handler(P8_EVENT_QUIT, 0, 0, 0, 0) : 1;
-      break;
-
-    case SDL_KEYDOWN:
-      if (handler)
-        handler(P8_EVENT_KEYDOWN, event.key.keysym.scancode, 0, 0, 0);
-      break;
- 
-    case SDL_KEYUP:
-      if (handler)
-        handler(P8_EVENT_KEYUP, event.key.keysym.scancode, 0, 0, 0);
-      break;
-
-    case SDL_MOUSEMOTION:
-      if (handler && event.motion.which != SDL_TOUCH_MOUSEID) {
-        u64 xy = event.motion.x;
-        u64 xyrel = event.motion.xrel;
-
-        xy = xy << 32 | event.motion.y;
-        xyrel = xyrel << 32 | event.motion.yrel;
-
-        handler(P8_EVENT_MOUSEMOVE, xy, xyrel, event.motion.state, 0);
-      }
-      break;
-
-    case SDL_MOUSEBUTTONDOWN:
-      if (handler && event.button.which != SDL_TOUCH_MOUSEID) {
-        u64 xy = event.button.x;
-        u64 state = event.button.clicks;
-
-        xy = xy << 32 | event.button.y;
-        state = state << 32 | event.button.button;
-
-        handler(P8_EVENT_MOUSEDOWN, xy, state, 0, 0);
-      }
-      break;
-
-    case SDL_MOUSEBUTTONUP:
-      if (handler && event.button.which != SDL_TOUCH_MOUSEID) {
-        u64 xy = event.button.x;
-        u64 state = event.button.clicks;
-
-        xy = xy << 32 | event.button.y;
-        state = state << 32 | event.button.button;
-
-        handler(P8_EVENT_MOUSEUP, xy, state, 0, 0);
-      }
-      break;
-
-    case SDL_MOUSEWHEEL:
-      if (handler && event.button.which != SDL_TOUCH_MOUSEID) {
-        u64 xy = event.wheel.x;
-
-        xy = xy << 32 | event.wheel.y;
-
-        handler(P8_EVENT_MOUSEWHEEL, xy, 0, 0, 0);
-      }
-      break;
-
-    case SDL_FINGERDOWN:
-      break;
-
-    case SDL_FINGERUP:
-      break;
-
-    case SDL_FINGERMOTION:
-      break;
-
-    default:
-      break;
-    }
-  }
-
-  SDL_PumpEvents();
-
-  app->kstates = (u8 *)SDL_GetKeyboardState(NULL);
-  app->mstates = SDL_GetMouseState(&app->mx, &app->my);
-}
-
-void p8_present(p8_Canvas *screen) {
-  SDL_SetRenderTarget(app->renderer, NULL);
-  SDL_RenderCopy(app->renderer, screen, NULL, NULL);
-  SDL_RenderPresent(app->renderer);
-}
+void p8_tickupdate(void) { SDL_PumpEvents(); }
 
 bool p8_setfps(u32 rate) {
   if (rate < P8_FPS_LOWER_LIMIT || rate > P8_FPS_UPPER_LIMIT)
@@ -519,17 +422,88 @@ u32 p8_wait(void) {
   return time_passed;
 }
 
-u32 p8_mouse(s32 *x, s32 *y) {
-  if (x)
-    *x = app->mx;
+bool p8_event(p8_Event *event) {
+  SDL_Event e;
 
-  if (y)
-    *y = app->my;
+  memset(event, 0, sizeof(p8_Event));
 
-  return app->mstates;
+  while (SDL_PollEvent(&e)) {
+    switch (e.type) {
+    case SDL_QUIT:
+      event->type = P8_EVENT_QUIT;
+      return true;
+
+    case SDL_KEYDOWN:
+      event->type = P8_EVENT_KEYDOWN;
+      event->key.code = e.key.keysym.scancode;
+      return true;
+
+    case SDL_KEYUP:
+      event->type = P8_EVENT_KEYUP;
+      event->key.code = e.key.keysym.scancode;
+      return true;
+
+    case SDL_MOUSEMOTION:
+      event->type = P8_EVENT_MOUSEMOVE;
+      event->mouse.state = e.motion.state;
+      event->mouse.x = e.motion.x;
+      event->mouse.y = e.motion.y;
+      event->mouse.xrel = e.motion.xrel;
+      event->mouse.yrel = e.motion.yrel;
+      return true;
+
+    case SDL_MOUSEBUTTONDOWN:
+      event->type = P8_EVENT_MOUSEDOWN;
+      event->button.button = e.button.button;
+      event->button.clicks = e.button.clicks;
+      event->button.x = e.button.x;
+      event->button.y = e.button.y;
+      return true;
+
+    case SDL_MOUSEBUTTONUP:
+      event->type = P8_EVENT_MOUSEUP;
+      event->button.button = e.button.button;
+      event->button.clicks = e.button.clicks;
+      event->button.x = e.button.x;
+      event->button.y = e.button.y;
+      return true;
+
+    case SDL_MOUSEWHEEL:
+      event->type = P8_EVENT_MOUSEWHEEL;
+      event->wheel.x = e.wheel.preciseX;
+      event->wheel.y = e.wheel.preciseY;
+      return true;
+
+    case SDL_TEXTEDITING:
+      event->type = P8_EVENT_TEXTEDITING;
+      event->edit.start = e.edit.start;
+      event->edit.length = e.edit.length;
+      memcpy(event->edit.text, e.edit.text, SDL_TEXTEDITINGEVENT_TEXT_SIZE);
+      return true;
+
+    case SDL_TEXTINPUT:
+      event->type = P8_EVENT_TEXTINPUT;
+      memcpy(event->text.text, e.text.text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
+      return true;
+    }
+  }
+  return false;
 }
 
-bool p8_pressed(u32 key) { return (bool)app->kstates[key]; }
+const u8 *p8_keyboard(void) { return SDL_GetKeyboardState(NULL); }
+
+u32 p8_mouse(s32 *x, s32 *y) { return SDL_GetMouseState(x, y); }
+
+void p8_textinput(bool onoff) {
+  if (onoff)
+    SDL_StartTextInput();
+  else
+    SDL_StopTextInput();
+}
+
+bool p8_textinputactive(void) { return SDL_IsTextInputActive(); }
+
+void p8_textinputrect(p8_Rect *rect) { SDL_SetTextInputRect((SDL_Rect *)rect); }
 
 p8_Canvas *p8_canvas(s32 w, s32 h) {
   p8_Canvas *canvas = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
@@ -715,6 +689,12 @@ void p8_blitex(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
   SDL_RenderCopyEx(app->renderer, src, (const SDL_Rect *)srcrect,
                    (const SDL_Rect *)dstrect, angle, (const SDL_Point *)center,
                    flip);
+}
+
+void p8_present(p8_Canvas *screen) {
+  SDL_SetRenderTarget(app->renderer, NULL);
+  SDL_RenderCopy(app->renderer, screen, NULL, NULL);
+  SDL_RenderPresent(app->renderer);
 }
 
 bool p8_loadfont(const char *name, const char *filename) {

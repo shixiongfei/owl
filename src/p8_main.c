@@ -15,10 +15,12 @@
 #define SCREEN_H 600
 
 int p8_main(int argc, char *argv[]) {
+  bool quit = false;
+  p8_Event event;
   p8_Canvas *screen, *hero;
   p8_Point points[4] = {{13, 13}, {13, 15}, {15, 13}, {15, 15}};
   p8_Point lines[4] = {{320, 200}, {300, 240}, {340, 240}, {320, 200}};
-  p8_Rect rect = {150, 150, 100, 50};
+  p8_Rect rect = {150, 150, 500, 50};
   p8_Rect rects[2] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
   p8_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
   p8_Rect hero_pos, clip_text = {200, 50, 110, 12};
@@ -38,13 +40,6 @@ int p8_main(int argc, char *argv[]) {
 
   p8_loadsound("coin1", "./coin1.wav");
   p8_loadsound("coin2", "./coin2.wav");
-  p8_loadsound("testmp3", "./test.mp3");
-  p8_loadsound("ghsy", "./ghsy.flac");
-
-  p8_play("coin1");
-  p8_play("coin2");
-  p8_play("ghsy");
-  s32 i = 0;
 
   hero = p8_loadex("hero.bmp", p8_rgb(0xff, 0, 0xff));
 
@@ -52,16 +47,34 @@ int p8_main(int argc, char *argv[]) {
   hero_pos.y = 200;
   p8_size(hero, &hero_pos.w, &hero_pos.h);
 
-  while (!p8_closed()) {
-    p8_events(NULL);
+  p8_textinput(true);
+  //p8_textinputrect(&rect);
 
-    if (!i && !p8_playing("ghsy")) {
-      i++;
-      p8_play("testmp3");
-    }
+  while (!quit) {
+    p8_tickupdate();
 
-    p8_color(screen, p8_rgb(0, 0, 0));
+    p8_color(screen, p8_rgb(0xff, 0xff, 0xff));
     p8_clear(screen);
+
+    p8_color(screen, p8_rgb(0xff, 0, 0xff));
+
+    while (p8_event(&event)) {
+      switch (event.type) {
+      case P8_EVENT_QUIT:
+        quit = true;
+        break;
+      case P8_EVENT_MOUSEMOVE:
+        p8_pixel(screen, event.mouse.x, event.mouse.y);
+        break;
+      case P8_EVENT_KEYUP:
+        if (event.key.code == P8_KEY_K)
+          p8_play("coin1");
+
+        if (event.key.code == P8_KEY_L)
+          p8_play("coin2");
+        break;
+      }
+    }
 
     p8_color(screen, p8_rgb(0xff, 0, 0));
     p8_pixel(screen, 10, 10);

@@ -33,16 +33,19 @@ P8_API void p8_sleep(u32 ms);
 
 P8_API bool p8_init(s32 w, s32 h, const char *title, s32 flags);
 P8_API void p8_quit(void);
-P8_API bool p8_closed(void);
-P8_API void p8_events(p8_EventHandler handler);
-P8_API void p8_present(p8_Canvas *screen);
+P8_API void p8_tickupdate(void);
 
 P8_API bool p8_setfps(u32 rate);
 P8_API u32 p8_getfps(void);
 P8_API u32 p8_wait(void);
 
+P8_API bool p8_event(p8_Event *event);
+P8_API const u8 *p8_keyboard(void);
 P8_API u32 p8_mouse(s32 *x, s32 *y);
-P8_API bool p8_pressed(u32 key);
+
+P8_API void p8_textinput(bool onoff);
+P8_API bool p8_textinputactive(void);
+P8_API void p8_textinputrect(p8_Rect *rect);
 
 P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
 P8_API p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, u8 format);
@@ -74,6 +77,7 @@ P8_API void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
 P8_API void p8_blitex(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                       const p8_Rect *dstrect, f64 angle, const p8_Point *center,
                       u32 flip);
+P8_API void p8_present(p8_Canvas *screen);
 
 P8_API p8_Table *p8_table(void);
 P8_API void p8_freetable(p8_Table *table, p8_Dtor dtor);

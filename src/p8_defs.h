@@ -81,9 +81,8 @@
 #define P8_EVENT_MOUSEDOWN (P8_EVENT_BASE + 4)
 #define P8_EVENT_MOUSEUP (P8_EVENT_BASE + 5)
 #define P8_EVENT_MOUSEWHEEL (P8_EVENT_BASE + 6)
-#define P8_EVENT_FINGERDOWN (P8_EVENT_BASE + 7)
-#define P8_EVENT_FINGERUP (P8_EVENT_BASE + 8)
-#define P8_EVENT_FINGERMOVE (P8_EVENT_BASE + 9)
+#define P8_EVENT_TEXTEDITING (P8_EVENT_BASE + 7)
+#define P8_EVENT_TEXTINPUT (P8_EVENT_BASE + 8)
 
 #define P8_BUTTON(X) (1 << ((X)-1))
 #define P8_BUTTON_LEFT 1
@@ -137,7 +136,42 @@ typedef u32 p8_Audio;
 typedef struct SDL_Texture p8_Canvas;
 typedef struct p8_Table p8_Table;
 typedef void (*p8_Dtor)(void *);
-typedef s32 (*p8_EventHandler)(u32 event, u64 a, u64 b, u64 c, uword_t p);
+
+typedef struct p8_Event {
+  u32 type;
+
+  union {
+    struct {
+      s32 code;
+    } key;
+
+    struct {
+      u32 state;
+      s32 x, y;
+      s32 xrel, yrel;
+    } mouse;
+
+    struct {
+      u8 button;
+      u8 clicks;
+      s32 x, y;
+    } button;
+
+    struct {
+      float x, y;
+    } wheel;
+
+    struct {
+      char text[32];
+      s32 start;
+      s32 length;
+    } edit;
+
+    struct {
+      char text[32];
+    } text;
+  };
+} p8_Event;
 
 typedef enum {
   P8_KEY_UNKNOWN = 0,
