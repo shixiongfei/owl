@@ -104,6 +104,14 @@ typedef struct p8_Rect {
 #define P8_FLIP_HORIZONTAL 1
 #define P8_FLIP_VERTICAL 2
 
+#define P8_AUDIO_U8 0
+#define P8_AUDIO_S8 1
+#define P8_AUDIO_U16 2
+#define P8_AUDIO_S16 3
+#define P8_AUDIO_S32 4
+#define P8_AUDIO_F32 5
+
+typedef u32 p8_Audio;
 typedef struct SDL_Texture p8_Canvas;
 typedef struct p8_Table p8_Table;
 typedef void (*p8_Dtor)(void *);
@@ -136,7 +144,7 @@ P8_API u32 p8_mouse(s32 *x, s32 *y);
 P8_API bool p8_pressed(u32 key);
 
 P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
-P8_API p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, s32 format);
+P8_API p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, u8 format);
 P8_API p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey);
 P8_API p8_Canvas *p8_load(const char *filename);
 P8_API p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey);
@@ -167,7 +175,7 @@ P8_API void p8_blitex(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                       u32 flip);
 
 P8_API p8_Table *p8_table(void);
-P8_API void p8_tablefree(p8_Table *table, p8_Dtor dtor);
+P8_API void p8_freetable(p8_Table *table, p8_Dtor dtor);
 P8_API void p8_cleartable(p8_Table *table, p8_Dtor dtor);
 P8_API s32 p8_tablesize(p8_Table *table);
 P8_API void *p8_settable(p8_Table *table, const char *name, void *value);
@@ -180,6 +188,13 @@ P8_API bool p8_font(const char *name, s32 size);
 P8_API void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
                     p8_Pixel color);
 P8_API s32 p8_textwidth(const char *text);
+
+P8_API p8_Audio p8_audio(s32 freq, u8 format, u8 channels, u16 samples);
+P8_API void p8_closeaudio(p8_Audio audio);
+P8_API void p8_clearaudio(p8_Audio audio);
+P8_API void p8_playaudio(p8_Audio audio, bool onoff);
+P8_API bool p8_putaudio(p8_Audio audio, const void *buffer, s32 len);
+P8_API u32 p8_audiobuffered(p8_Audio audio);
 
 P8_API bool p8_loadsound(const char *name, const char *filename);
 P8_API bool p8_playing(const char *name);

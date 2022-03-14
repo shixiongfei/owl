@@ -51,8 +51,8 @@ typedef struct p8_Font {
 } p8_Font;
 
 typedef struct p8_Sound {
-  SDL_AudioDeviceID device;
   SDL_AudioSpec spec;
+  p8_Audio audio;
   u32 type;
   u32 size;
   u8 *buffer;
@@ -181,18 +181,13 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
   return bitmap;
 }
 
-static SDL_AudioDeviceID p8_openaudio(const SDL_AudioSpec *spec) {
-  SDL_AudioDeviceID device = SDL_OpenAudioDevice(NULL, 0, spec, NULL, 0);
+static p8_Audio p8_openaudio(const SDL_AudioSpec *spec) {
+  p8_Audio audio = SDL_OpenAudioDevice(NULL, 0, spec, NULL, 0);
 
-  if (device)
-    SDL_PauseAudioDevice(device, 0);
+  if (audio)
+    SDL_PauseAudioDevice(audio, 0);
 
-  return device;
-}
-
-static void p8_closeaudio(SDL_AudioDeviceID device) {
-  SDL_ClearQueuedAudio(device);
-  SDL_CloseAudioDevice(device);
+  return audio;
 }
 
 static p8_Sound *p8_loadwav(const char *filename) {
@@ -300,8 +295,8 @@ static p8_Sound *p8_sound(const char *filename) {
 }
 
 static void p8_soundfree(p8_Sound *sound) {
-  if (sound->device)
-    p8_closeaudio(sound->device);
+  p8_clearaudio(sound->audio);
+  p8_closeaudio(sound->audio);
 
   switch (sound->type) {
   case P8_SOUND_WAV:
@@ -382,12 +377,12 @@ void p8_quit(void) {
   }
 
   if (app->ttfs) {
-    p8_tablefree(app->ttfs, (p8_Dtor)p8_ttffree);
+    p8_freetable(app->ttfs, (p8_Dtor)p8_ttffree);
     app->ttfs = NULL;
   }
 
   if (app->sounds) {
-    p8_tablefree(app->sounds, (p8_Dtor)p8_soundfree);
+    p8_freetable(app->sounds, (p8_Dtor)p8_soundfree);
     app->sounds = NULL;
   }
 
@@ -481,7 +476,7 @@ p8_Canvas *p8_canvas(s32 w, s32 h) {
   return canvas;
 }
 
-static p8_Canvas *p8_dynamic(s32 w, s32 h, s32 format) {
+static p8_Canvas *p8_dynamic(s32 w, s32 h, u8 format) {
   s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
                                     : SDL_PIXELFORMAT_RGBA32;
   s32 a = SDL_TEXTUREACCESS_STREAMING;
@@ -495,7 +490,7 @@ static p8_Canvas *p8_dynamic(s32 w, s32 h, s32 format) {
   return canvas;
 }
 
-static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, s32 format) {
+static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, u8 format) {
   s32 d = format * 8;
   s32 p = format * w;
   s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
@@ -518,7 +513,7 @@ static p8_Canvas *p8_tocanvas(p8_Image *image) {
   return canvas;
 }
 
-p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, s32 format) {
+p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, u8 format) {
   p8_Image *image = p8_toimage(w, h, data, format);
 
   if (!image)
@@ -740,6 +735,74 @@ s32 p8_textwidth(const char *text) {
   return (s32)p8_ttfwidth(font, text);
 }
 
+p8_Audio p8_audio(s32 freq, u8 format, u8 channels, u16 samples) {
+  SDL_AudioSpec spec = {0};
+
+  spec.freq = freq;
+  spec.channels = channels;
+  spec.samples = samples;
+
+  switch (format) {
+  case P8_AUDIO_U8:
+    spec.format = AUDIO_U8;
+    break;
+  case P8_AUDIO_S8:
+    spec.format = AUDIO_S8;
+    break;
+  case P8_AUDIO_U16:
+    spec.format = AUDIO_U16SYS;
+    break;
+  case P8_AUDIO_S16:
+    spec.format = AUDIO_S16SYS;
+    break;
+  case P8_AUDIO_S32:
+    spec.format = AUDIO_S32SYS;
+    break;
+  case P8_AUDIO_F32:
+    spec.format = AUDIO_F32SYS;
+    break;
+  default:
+    return 0;
+  }
+
+  return p8_openaudio(&spec);
+}
+
+void p8_closeaudio(p8_Audio audio) {
+  if (!audio)
+    return;
+
+  SDL_CloseAudioDevice(audio);
+}
+
+void p8_clearaudio(p8_Audio audio) {
+  if (!audio)
+    return;
+
+  SDL_ClearQueuedAudio(audio);
+}
+
+void p8_playaudio(p8_Audio audio, bool onoff) {
+  if (!audio)
+    return;
+
+  SDL_PauseAudioDevice(audio, !onoff);
+}
+
+bool p8_putaudio(p8_Audio audio, const void *buffer, s32 len) {
+  if (!audio)
+    return false;
+
+  return 0 == SDL_QueueAudio(audio, buffer, len);
+}
+
+u32 p8_audiobuffered(p8_Audio audio) {
+  if (!audio)
+    return 0;
+
+  return SDL_GetQueuedAudioSize(audio);
+}
+
 bool p8_loadsound(const char *name, const char *filename) {
   p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
 
@@ -761,10 +824,10 @@ bool p8_loadsound(const char *name, const char *filename) {
 bool p8_playing(const char *name) {
   p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
 
-  if (!sound || !sound->device)
+  if (!sound)
     return false;
 
-  return SDL_GetQueuedAudioSize(sound->device) > 0;
+  return p8_audiobuffered(sound->audio) > 0;
 }
 
 bool p8_play(const char *name) {
@@ -773,42 +836,39 @@ bool p8_play(const char *name) {
   if (!sound)
     return false;
 
-  if (!sound->device)
-    sound->device = p8_openaudio(&sound->spec);
+  if (!sound->audio)
+    sound->audio = p8_openaudio(&sound->spec);
 
-  if (!sound->device)
-    return false;
-
-  return 0 == SDL_QueueAudio(sound->device, sound->buffer, sound->size);
+  return p8_putaudio(sound->audio, sound->buffer, sound->size);
 }
 
 bool p8_stop(const char *name) {
   p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
 
-  if (!sound || !sound->device)
+  if (!sound)
     return false;
 
-  SDL_ClearQueuedAudio(sound->device);
+  p8_clearaudio(sound->audio);
   return true;
 }
 
 bool p8_pause(const char *name) {
   p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
 
-  if (!sound || !sound->device)
+  if (!sound)
     return false;
 
-  SDL_PauseAudioDevice(sound->device, 1);
+  p8_playaudio(sound->audio, false);
   return true;
 }
 
 bool p8_resume(const char *name) {
   p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
 
-  if (!sound || !sound->device)
+  if (!sound)
     return false;
 
-  SDL_PauseAudioDevice(sound->device, 0);
+  p8_playaudio(sound->audio, true);
   return true;
 }
 

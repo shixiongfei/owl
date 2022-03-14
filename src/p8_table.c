@@ -135,7 +135,7 @@ p8_Table *p8_table(void) {
   return table;
 }
 
-void p8_tablefree(p8_Table *table, p8_Dtor dtor) {
+void p8_freetable(p8_Table *table, p8_Dtor dtor) {
   p8_triedtor(table, table->root, dtor);
   p8_triefree(table->root);
   free(table);
