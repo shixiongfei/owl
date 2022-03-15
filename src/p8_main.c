@@ -52,8 +52,6 @@ int p8_main(int argc, char *argv[]) {
   p8_textinputrect(&rect);
 
   while (!quit) {
-    p8_tickupdate();
-
     p8_color(screen, p8_rgb(0, 0, 0));
     p8_clear(screen);
 

@@ -383,8 +383,6 @@ void p8_quit(void) {
   SDL_Quit();
 }
 
-void p8_tickupdate(void) { SDL_PumpEvents(); }
-
 bool p8_setfps(u32 rate) {
   if (rate < P8_FPS_LOWER_LIMIT || rate > P8_FPS_UPPER_LIMIT)
     return false;
@@ -474,16 +472,9 @@ bool p8_event(p8_Event *event) {
       event->wheel.y = e.wheel.preciseY;
       return true;
 
-    case SDL_TEXTEDITING:
-      event->type = P8_EVENT_TEXTEDITING;
-      event->edit.start = e.edit.start;
-      event->edit.length = e.edit.length;
-      memcpy(event->edit.text, e.edit.text, SDL_TEXTEDITINGEVENT_TEXT_SIZE);
-      return true;
-
     case SDL_TEXTINPUT:
       event->type = P8_EVENT_TEXTINPUT;
-      memcpy(event->text.text, e.text.text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
+      memcpy(event->input.text, e.text.text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
       return true;
     }
   }
