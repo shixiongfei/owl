@@ -30,8 +30,6 @@
 #define P8_FPS_LOWER_LIMIT 1
 #define P8_FPS_DEFAULT 60
 
-#define P8_BLENDMODE SDL_BLENDMODE_BLEND
-
 #define P8_SOUND_NONE 0
 #define P8_SOUND_WAV 1
 #define P8_SOUND_FLAC 2
@@ -345,7 +343,7 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
   if (!app->sounds)
     goto error;
 
-  SDL_SetRenderDrawBlendMode(app->renderer, P8_BLENDMODE);
+  SDL_SetRenderDrawBlendMode(app->renderer, SDL_BLENDMODE_BLEND);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
   SDL_DisableScreenSaver();
@@ -524,7 +522,7 @@ p8_Canvas *p8_canvas(s32 w, s32 h) {
   if (!canvas)
     return NULL;
 
-  SDL_SetTextureBlendMode(canvas, P8_BLENDMODE);
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 
   return canvas;
 }
@@ -538,7 +536,7 @@ static p8_Canvas *p8_dynamic(s32 w, s32 h, u8 format) {
   if (!canvas)
     return NULL;
 
-  SDL_SetTextureBlendMode(canvas, P8_BLENDMODE);
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 
   return canvas;
 }
@@ -561,7 +559,7 @@ static p8_Canvas *p8_tocanvas(p8_Image *image) {
   if (!canvas)
     return NULL;
 
-  SDL_SetTextureBlendMode(canvas, P8_BLENDMODE);
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 
   return canvas;
 }
