@@ -62,6 +62,7 @@ typedef struct p8_Window {
   SDL_Window *window;
   SDL_Renderer *renderer;
 
+  s32 w, h;
   u32 rate;
   u32 framecount;
   f32 rateticks;
@@ -72,6 +73,9 @@ typedef struct p8_Window {
   p8_Font font;
 
   p8_Table *sounds;
+
+  char input_text[32];
+  char edit_text[32];
 } p8_Window;
 
 static p8_Window p8_app = {0};
@@ -346,6 +350,8 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
   SDL_DisableScreenSaver();
 
+  app->w = w;
+  app->h = h;
   app->framecount = 0;
   app->rate = P8_FPS_DEFAULT;
   app->rateticks = 1000.0f / (f32)P8_FPS_DEFAULT;
@@ -473,15 +479,19 @@ bool p8_event(p8_Event *event) {
       return true;
 
     case SDL_TEXTINPUT:
+      strncpy(app->input_text, e.text.text, sizeof(app->input_text));
+
       event->type = P8_EVENT_TEXTINPUT;
-      memcpy(event->input.text, e.text.text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
+      event->input.text = app->input_text;
       return true;
 
     case SDL_TEXTEDITING:
+      strncpy(app->edit_text, e.edit.text, sizeof(app->edit_text));
+
       event->type = P8_EVENT_TEXTEDITING;
       event->edit.start = e.edit.start;
       event->edit.length = e.edit.length;
-      memcpy(event->edit.text, e.edit.text, SDL_TEXTEDITINGEVENT_TEXT_SIZE);
+      event->edit.text = app->edit_text;
       return true;
     }
   }
@@ -501,7 +511,12 @@ void p8_textinput(bool onoff) {
 
 bool p8_textinputactive(void) { return SDL_IsTextInputActive(); }
 
-void p8_textinputrect(p8_Rect *rect) { SDL_SetTextInputRect((SDL_Rect *)rect); }
+bool p8_textinputshown(void) { return strlen(app->edit_text) > 0; }
+
+void p8_textinputposition(s32 x, s32 y) {
+  SDL_Rect rect = {x, y, app->w - x, app->h - y};
+  SDL_SetTextInputRect(&rect);
+}
 
 p8_Canvas *p8_canvas(s32 w, s32 h) {
   p8_Canvas *canvas = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,

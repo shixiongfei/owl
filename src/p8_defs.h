@@ -162,11 +162,11 @@ typedef struct p8_Event {
     } wheel;
 
     struct {
-      char text[32];
+      char *text;
     } input;
 
     struct {
-      char text[32];
+      char *text;
       s32 start;
       s32 length;
     } edit;

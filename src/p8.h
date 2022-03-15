@@ -44,7 +44,8 @@ P8_API u32 p8_mouse(s32 *x, s32 *y);
 
 P8_API void p8_textinput(bool onoff);
 P8_API bool p8_textinputactive(void);
-P8_API void p8_textinputrect(p8_Rect *rect);
+P8_API bool p8_textinputshown(void);
+P8_API void p8_textinputposition(s32 x, s32 y);
 
 P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
 P8_API p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, u8 format);

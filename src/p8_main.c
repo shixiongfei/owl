@@ -48,7 +48,7 @@ int p8_main(int argc, char *argv[]) {
   p8_size(hero, &hero_pos.w, &hero_pos.h);
 
   p8_textinput(true);
-  p8_textinputrect(&rect);
+  p8_textinputposition(100, 100);
 
   while (!quit) {
     p8_color(screen, p8_rgb(0, 0, 0));
