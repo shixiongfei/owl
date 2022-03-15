@@ -48,7 +48,6 @@ int p8_main(int argc, char *argv[]) {
   p8_size(hero, &hero_pos.w, &hero_pos.h);
 
   p8_textinput(true);
-  // https://github.com/libsdl-org/SDL/issues/4154
   p8_textinputrect(&rect);
 
   while (!quit) {

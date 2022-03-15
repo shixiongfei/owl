@@ -82,6 +82,7 @@
 #define P8_EVENT_MOUSEUP (P8_EVENT_BASE + 5)
 #define P8_EVENT_MOUSEWHEEL (P8_EVENT_BASE + 6)
 #define P8_EVENT_TEXTINPUT (P8_EVENT_BASE + 7)
+#define P8_EVENT_TEXTEDITING (P8_EVENT_BASE + 8)
 
 #define P8_BUTTON(X) (1 << ((X)-1))
 #define P8_BUTTON_LEFT 1
@@ -163,6 +164,12 @@ typedef struct p8_Event {
     struct {
       char text[32];
     } input;
+
+    struct {
+      char text[32];
+      s32 start;
+      s32 length;
+    } edit;
   };
 } p8_Event;
 

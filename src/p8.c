@@ -476,6 +476,13 @@ bool p8_event(p8_Event *event) {
       event->type = P8_EVENT_TEXTINPUT;
       memcpy(event->input.text, e.text.text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
       return true;
+
+    case SDL_TEXTEDITING:
+      event->type = P8_EVENT_TEXTEDITING;
+      event->edit.start = e.edit.start;
+      event->edit.length = e.edit.length;
+      memcpy(event->edit.text, e.edit.text, SDL_TEXTEDITINGEVENT_TEXT_SIZE);
+      return true;
     }
   }
   return false;
