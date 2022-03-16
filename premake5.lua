@@ -31,8 +31,14 @@ workspace ( "p8" )
     kind ( "WindowedApp" )
     language ( "C" )
     files { "./src/**.h", "./src/**.c", "./3rd/*.h",
-            "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c" }
-    includedirs { "./3rd", "./3rd/sdl2/include", "./3rd/utf8" }
+            "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c",
+            "./3rd/wren/src/**.h", "./3rd/wren/src/**.c" }
+    includedirs { "./3rd",
+                  "./3rd/sdl2/include",
+                  "./3rd/utf8",
+                  "./3rd/wren/src/include",
+                  "./3rd/wren/src/vm",
+                  "./3rd/wren/src/optional" }
     libdirs { "./libs" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
@@ -69,7 +75,7 @@ workspace ( "p8" )
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
-      links { "iconv" }
+      links { "m", "iconv" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
