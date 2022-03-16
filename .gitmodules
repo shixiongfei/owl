@@ -4,3 +4,6 @@
 [submodule "3rd/utf8"]
 	path = 3rd/utf8
 	url = https://github.com/shixiongfei/utf8.git
+[submodule "3rd/wren"]
+	path = 3rd/wren
+	url = https://github.com/wren-lang/wren.git
