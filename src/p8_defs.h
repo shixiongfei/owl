@@ -32,6 +32,7 @@
 #define P8_VERSION P8_VERMAJOR "." P8_VERMINOR
 #define P8_RELEASE P8_VERSION "." P8_VERPATCH
 
+#define P8_AUTHOR "shixiongfei"
 #define P8_API extern
 
 #ifdef _MSC_VER
@@ -84,15 +85,23 @@
 #define P8_EVENT_TEXTINPUT (P8_EVENT_BASE + 7)
 #define P8_EVENT_TEXTEDITING (P8_EVENT_BASE + 8)
 
+#define P8_MSGBOX_ERROR 0
+#define P8_MSGBOX_WARNING 1
+#define P8_MSGBOX_INFORMATION 2
+
+#define P8_MSGBOX_NOKEY 0
+#define P8_MSGBOX_RETURNKEY 1
+#define P8_MSGBOX_ESCKEY 2
+
 #define P8_BUTTON(X) (1 << ((X)-1))
 #define P8_BUTTON_LEFT 1
-#define P8_BUTTON_MIDDLE 2
-#define P8_BUTTON_RIGHT 3
+#define P8_BUTTON_RIGHT 2
+#define P8_BUTTON_MIDDLE 3
 #define P8_BUTTON_X1 4
 #define P8_BUTTON_X2 5
 #define P8_BUTTON_LMASK P8_BUTTON(P8_BUTTON_LEFT)
-#define P8_BUTTON_MMASK P8_BUTTON(P8_BUTTON_MIDDLE)
 #define P8_BUTTON_RMASK P8_BUTTON(P8_BUTTON_RIGHT)
+#define P8_BUTTON_MMASK P8_BUTTON(P8_BUTTON_MIDDLE)
 #define P8_BUTTON_X1MASK P8_BUTTON(P8_BUTTON_X1)
 #define P8_BUTTON_X2MASK P8_BUTTON(P8_BUTTON_X2)
 
@@ -138,6 +147,12 @@ typedef struct p8_Table p8_Table;
 typedef void (*p8_Dtor)(void *);
 typedef void *p8_Dylib;
 
+typedef struct p8_MsgBoxButton {
+  u32 flags;
+  int buttonid;
+  const char *text;
+} p8_MsgBoxButton;
+
 typedef struct p8_Event {
   u32 type;
 
@@ -147,14 +162,12 @@ typedef struct p8_Event {
     } key;
 
     struct {
-      u32 state;
       s32 x, y;
       s32 xrel, yrel;
     } mouse;
 
     struct {
       u8 button;
-      u8 clicks;
       s32 x, y;
     } button;
 

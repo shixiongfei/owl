@@ -9,12 +9,45 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
+#include <stdio.h>
+#include <string.h>
+
+#include "wren.h"
+
 #include "p8.h"
 
-#define SCREEN_W 800
-#define SCREEN_H 600
+static void wren_onwrite(WrenVM *vm, const char *text) { printf("%s", text); }
 
-int p8_main(int argc, char *argv[]) {
+static void wren_onerror(WrenVM *vm, WrenErrorType type, const char *module,
+                         const int line, const char *msg) {
+  switch (type) {
+  case WREN_ERROR_COMPILE:
+    printf("[%s line %d] [Error] %s\n", module, line, msg);
+    break;
+  case WREN_ERROR_STACK_TRACE:
+    printf("[%s line %d] in %s\n", module, line, msg);
+    break;
+  case WREN_ERROR_RUNTIME:
+    printf("[Runtime Error] %s\n", msg);
+    break;
+  }
+}
+
+static s32 p8_run(s32 argc, char *argv[]) {
+  WrenConfiguration config;
+  WrenVM *vm;
+
+  wrenInitConfiguration(&config);
+
+  config.writeFn = &wren_onwrite;
+  config.errorFn = &wren_onerror;
+
+  vm = wrenNewVM(&config);
+
+  if (!vm)
+    return -1;
+
+
   bool quit = false;
   p8_Event event;
   p8_Canvas *screen, *hero;
@@ -25,6 +58,8 @@ int p8_main(int argc, char *argv[]) {
   p8_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
   p8_Rect hero_pos, clip_text = {200, 50, 110, 12};
   const char *text = "中英文abc混合ABC测试!";
+  const s32 SCREEN_W = 800;
+  const s32 SCREEN_H = 600;
 
   if (!p8_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
     return -1;
@@ -70,6 +105,12 @@ int p8_main(int argc, char *argv[]) {
 
         if (event.key.code == P8_KEY_L)
           p8_play("coin2");
+
+        if (event.key.code == P8_KEY_J)
+          p8_play("ghsy");
+
+        if (event.key.code == P8_KEY_H)
+          p8_play("test");
         break;
       }
     }
@@ -105,7 +146,29 @@ int p8_main(int argc, char *argv[]) {
 
   p8_destroy(hero);
   p8_destroy(screen);
+
   p8_quit();
 
+
+  wrenFreeVM(vm);
+
   return 0;
+}
+
+static s32 p8_showversion(void) {
+  p8_MsgBoxButton mbtn = {P8_MSGBOX_RETURNKEY | P8_MSGBOX_ESCKEY, 0, "OK"};
+  char title[] = {"P8 Game Engine"};
+  char version[] = {"P8 v" P8_RELEASE};
+  char build[] = {"Build: " __DATE__ " " __TIME__};
+  char author[] = {"By: " P8_AUTHOR};
+  char message[sizeof(version) + sizeof(build) + sizeof(author) + 1] = {0};
+
+  sprintf(message, "%s\n%s\n\n%s", version, build, author);
+  p8_msgbox(P8_MSGBOX_INFORMATION, title, message, &mbtn, 1);
+
+  return 0;
+}
+
+int p8_main(int argc, char *argv[]) {
+  return argc > 1 ? p8_run(argc, argv) : p8_showversion();
 }

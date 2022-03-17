@@ -38,6 +38,9 @@ P8_API bool p8_setfps(u32 rate);
 P8_API u32 p8_getfps(void);
 P8_API u32 p8_wait(void);
 
+P8_API s32 p8_msgbox(s32 type, const char *title, const char *message,
+                     const p8_MsgBoxButton *buttons, s32 count);
+
 P8_API bool p8_event(p8_Event *event);
 P8_API const u8 *p8_keyboard(void);
 P8_API u32 p8_mouse(s32 *x, s32 *y);

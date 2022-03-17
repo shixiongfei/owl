@@ -424,6 +424,44 @@ u32 p8_wait(void) {
   return time_passed;
 }
 
+s32 p8_msgbox(s32 type, const char *title, const char *message,
+              const p8_MsgBoxButton *buttons, s32 count) {
+  SDL_MessageBoxData data = {0};
+  s32 buttonid = -1;
+
+  switch (type) {
+  case P8_MSGBOX_ERROR:
+    data.flags = SDL_MESSAGEBOX_ERROR;
+    break;
+  case P8_MSGBOX_WARNING:
+    data.flags = SDL_MESSAGEBOX_WARNING;
+    break;
+  case P8_MSGBOX_INFORMATION:
+  default:
+    data.flags = SDL_MESSAGEBOX_INFORMATION;
+    break;
+  }
+  
+  data.window = app->window;
+  data.title = title;
+  data.message = message;
+  data.numbuttons = count;
+  data.buttons = (const SDL_MessageBoxButtonData *)buttons;
+
+  SDL_ShowMessageBox(&data, &buttonid);
+  return buttonid;
+}
+
+P8_INLINE u8 p8_fixsdlbutton(u8 button) {
+  switch (button) {
+  case SDL_BUTTON_RIGHT:
+    return P8_BUTTON_RIGHT;
+  case SDL_BUTTON_MIDDLE:
+    return P8_BUTTON_MIDDLE;
+  }
+  return button;
+}
+
 bool p8_event(p8_Event *event) {
   SDL_Event e;
 
@@ -447,7 +485,6 @@ bool p8_event(p8_Event *event) {
 
     case SDL_MOUSEMOTION:
       event->type = P8_EVENT_MOUSEMOVE;
-      event->mouse.state = e.motion.state;
       event->mouse.x = e.motion.x;
       event->mouse.y = e.motion.y;
       event->mouse.xrel = e.motion.xrel;
@@ -456,16 +493,14 @@ bool p8_event(p8_Event *event) {
 
     case SDL_MOUSEBUTTONDOWN:
       event->type = P8_EVENT_MOUSEDOWN;
-      event->button.button = e.button.button;
-      event->button.clicks = e.button.clicks;
+      event->button.button = p8_fixsdlbutton(e.button.button);
       event->button.x = e.button.x;
       event->button.y = e.button.y;
       return true;
 
     case SDL_MOUSEBUTTONUP:
       event->type = P8_EVENT_MOUSEUP;
-      event->button.button = e.button.button;
-      event->button.clicks = e.button.clicks;
+      event->button.button = p8_fixsdlbutton(e.button.button);
       event->button.x = e.button.x;
       event->button.y = e.button.y;
       return true;
@@ -498,7 +533,18 @@ bool p8_event(p8_Event *event) {
 
 const u8 *p8_keyboard(void) { return SDL_GetKeyboardState(NULL); }
 
-u32 p8_mouse(s32 *x, s32 *y) { return SDL_GetMouseState(x, y); }
+u32 p8_mouse(s32 *x, s32 *y) {
+  u32 state = SDL_GetMouseState(x, y);
+  u32 mask = ~(P8_BUTTON_RMASK | P8_BUTTON_MMASK) & state;
+
+  if (SDL_BUTTON_RMASK & state)
+    mask |= P8_BUTTON_RMASK;
+
+  if (SDL_BUTTON_MMASK & state)
+    mask |= P8_BUTTON_MMASK;
+
+  return mask;
+}
 
 void p8_textinput(bool onoff) {
   if (onoff)
