@@ -346,6 +346,7 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
   SDL_SetRenderDrawBlendMode(app->renderer, SDL_BLENDMODE_BLEND);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+  SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, "1");
   SDL_DisableScreenSaver();
 
   app->w = w;
@@ -892,7 +893,7 @@ void p8_playaudio(p8_Audio audio, bool onoff) {
   SDL_PauseAudioDevice(audio, !onoff);
 }
 
-bool p8_putaudio(p8_Audio audio, const void *buffer, s32 len) {
+bool p8_audiostream(p8_Audio audio, const void *buffer, s32 len) {
   if (!audio)
     return false;
 
@@ -942,7 +943,7 @@ bool p8_play(const char *name) {
   if (!sound->audio)
     sound->audio = p8_openaudio(&sound->spec);
 
-  return p8_putaudio(sound->audio, sound->buffer, sound->size);
+  return p8_audiostream(sound->audio, sound->buffer, sound->size);
 }
 
 bool p8_stop(const char *name) {

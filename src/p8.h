@@ -101,7 +101,7 @@ P8_API p8_Audio p8_audio(s32 freq, u8 format, u8 channels, u16 samples);
 P8_API void p8_closeaudio(p8_Audio audio);
 P8_API void p8_clearaudio(p8_Audio audio);
 P8_API void p8_playaudio(p8_Audio audio, bool onoff);
-P8_API bool p8_putaudio(p8_Audio audio, const void *buffer, s32 len);
+P8_API bool p8_audiostream(p8_Audio audio, const void *buffer, s32 len);
 P8_API u32 p8_audiobuffered(p8_Audio audio);
 
 P8_API bool p8_loadsound(const char *name, const char *filename);
