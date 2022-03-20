@@ -123,6 +123,10 @@ P8_API char *p8_basename(char *outbuf, const char *path, char pathsep);
 P8_API p8_Dylib p8_dylib(const char *sofile);
 P8_API void *p8_dysym(p8_Dylib dylib, const char *name);
 
+#if P8_WINDOWS
+P8_API u32 p8_pesize(s64 *filesize);
+#endif
+
 #ifdef __cplusplus
 };
 #endif
