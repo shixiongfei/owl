@@ -793,8 +793,8 @@ bool p8_font(const char *name, s32 size) {
   return true;
 }
 
-void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
-             p8_Pixel color) {
+s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
+            p8_Pixel color) {
   p8_Font *font = &app->font;
   p8_Rect rect = {x, y, -1, -1};
   p8_Canvas *texture;
@@ -803,18 +803,18 @@ void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
   u8 *bitmap;
 
   if (!text)
-    return;
+    return -1;
 
   bitmap = p8_ttfbitmap(font, text, &rect.w, &rect.h);
 
   if (!bitmap)
-    return;
+    return -1;
 
   texture = p8_dynamic(rect.w, rect.h, P8_FORMAT_RGBA);
 
   if (!texture) {
     free(bitmap);
-    return;
+    return -1;
   }
 
   SDL_LockTexture(texture, NULL, (void **)&pixels, &pitch);
@@ -828,6 +828,8 @@ void p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
 
   p8_blit(canvas, texture, NULL, &rect);
   p8_destroy(texture);
+
+  return rect.w;
 }
 
 s32 p8_textwidth(const char *text) {
