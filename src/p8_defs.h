@@ -52,12 +52,19 @@
 #else
 #error "Unsupported Platform"
 #endif
+#define P8_APPLE 1
 #elif defined(__ANDROID__)
 #define P8_ANDROID 1
 #elif defined(__linux__)
 #define P8_LINUX 1
 #elif defined(__BSD__)
 #define P8_BSD 1
+#endif
+
+#ifndef _WIN32
+#define P8_PATHSEP '/'
+#else
+#define P8_PATHSEP '\\'
 #endif
 
 #define P8_FORMAT_RGB 3

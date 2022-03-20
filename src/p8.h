@@ -113,6 +113,12 @@ P8_API bool p8_resume(const char *name);
 
 P8_API s64 p8_filesize(const char *filename);
 P8_API u8 *p8_readfile(const char *filename);
+P8_API int p8_tempfile(const char *filename);
+
+P8_API const char *p8_selfname(void);
+P8_API char *p8_pathformat(char *path, char pathsep);
+P8_API char *p8_dirname(char *outbuf, const char *path, char pathsep);
+P8_API char *p8_basename(char *outbuf, const char *path, char pathsep);
 
 P8_API p8_Dylib p8_dylib(const char *sofile);
 P8_API void *p8_dysym(p8_Dylib dylib, const char *name);
