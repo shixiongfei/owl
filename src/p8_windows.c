@@ -9,13 +9,13 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
-#if _WIN32
+#ifdef _WIN32
 #include <Windows.h>
 #endif
 
 #include "p8.h"
 
-#if _WIN32
+#ifdef _WIN32
 /* @copy /b src.exe+your.data dst.exe */
 u32 p8_pesize(s64 *filesize) {
   LARGE_INTEGER liFileSize = {0};
