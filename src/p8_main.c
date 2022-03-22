@@ -9,31 +9,80 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
+#include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "wren.h"
 
 #include "p8.h"
 
-static void wren_onwrite(WrenVM *vm, const char *text) { printf("%s", text); }
+#ifndef _WIN32
+#define dynarray(type, name, size) type name[size]
+#else
+#include <malloc.h>
+#define dynarray(type, name, size)                                             \
+  type *name = (type *)_alloca((size) * sizeof(type))
+#endif
+
+static void message_box(s32 type, const char *title, const char *format, ...) {
+  p8_MsgBoxButton mbtn = {P8_MSGBOX_RETURNKEY | P8_MSGBOX_ESCKEY, 0, "OK"};
+  va_list args, ap;
+  s32 nbytes;
+
+  va_start(args, format);
+  va_copy(ap, args);
+
+  nbytes = vsnprintf(NULL, 0, format, ap);
+
+  if (nbytes > 0) {
+    dynarray(u8, message, nbytes + 1);
+    vsnprintf(message, nbytes + 1, format, args);
+    p8_msgbox(type, title, message, &mbtn, 1);
+  }
+  va_end(args);
+}
+
+#define error_box(format, ...)                                                 \
+  message_box(P8_MSGBOX_ERROR, "Error!", format, ##__VA_ARGS__)
+
+static s32 show_version(void) {
+  message_box(P8_MSGBOX_INFORMATION, "P8 Game Engine",
+              "P8 v%s\nBuild: %s %s\n\nBy: %s", P8_RELEASE, __DATE__, __TIME__,
+              P8_AUTHOR);
+  return 0;
+}
+
+static u8 *load_source(const char *module) {
+  char filename[260] = {0};
+
+  snprintf(filename, sizeof(filename), "%s/main.wren", module);
+  return p8_readfile(filename);
+}
+
+static void wren_onwrite(WrenVM *vm, const char *text) {
+  if (0 == strcmp(text, "\n"))
+    return;
+  message_box(P8_MSGBOX_INFORMATION, "Message", "%s", text);
+}
 
 static void wren_onerror(WrenVM *vm, WrenErrorType type, const char *module,
                          const int line, const char *msg) {
   switch (type) {
   case WREN_ERROR_COMPILE:
-    printf("[%s line %d] [Error] %s\n", module, line, msg);
+    error_box("Compile Error: [%s line %d] [Error] %s", module, line, msg);
     break;
   case WREN_ERROR_STACK_TRACE:
-    printf("[%s line %d] in %s\n", module, line, msg);
+    error_box("Stack Trace: [%s line %d] in %s", module, line, msg);
     break;
   case WREN_ERROR_RUNTIME:
-    printf("[Runtime Error] %s\n", msg);
+    error_box("Runtime Error: [Runtime Error] %s", msg);
     break;
   }
 }
 
-static s32 p8_run(s32 argc, char *argv[]) {
+static WrenVM *init_vm(void) {
   WrenConfiguration config;
   WrenVM *vm;
 
@@ -44,10 +93,13 @@ static s32 p8_run(s32 argc, char *argv[]) {
 
   vm = wrenNewVM(&config);
 
-  if (!vm)
-    return -1;
+  return vm;
+}
+
+static void free_vm(WrenVM *vm) { wrenFreeVM(vm); }
 
 
+static s32 run(void) {
   bool quit = false;
   p8_Event event;
   p8_Canvas *screen, *hero;
@@ -71,7 +123,7 @@ static s32 p8_run(s32 argc, char *argv[]) {
     return -1;
   }
 
-  p8_loadfont("宋体", "./simsun.ttc");
+  p8_loadfont("Unifont", "./unifont.ttf");
 
   p8_loadsound("coin1", "./coin1.wav");
   p8_loadsound("coin2", "./coin2.wav");
@@ -132,7 +184,7 @@ static s32 p8_run(s32 argc, char *argv[]) {
 
     p8_blit(screen, hero, NULL, &hero_pos);
 
-    if (p8_font("宋体", 18)) {
+    if (p8_font("Unifont", 16)) {
       p8_text(screen, text, 200, 20, p8_rgb(0xff, 0, 0));
 
       p8_clip(screen, &clip_text);
@@ -148,27 +200,39 @@ static s32 p8_run(s32 argc, char *argv[]) {
   p8_destroy(screen);
 
   p8_quit();
-
-
-  wrenFreeVM(vm);
-
-  return 0;
-}
-
-static s32 p8_showversion(void) {
-  p8_MsgBoxButton mbtn = {P8_MSGBOX_RETURNKEY | P8_MSGBOX_ESCKEY, 0, "OK"};
-  char title[] = {"P8 Game Engine"};
-  char version[] = {"P8 v" P8_RELEASE};
-  char build[] = {"Build: " __DATE__ " " __TIME__};
-  char author[] = {"By: " P8_AUTHOR};
-  char message[sizeof(version) + sizeof(build) + sizeof(author) + 1] = {0};
-
-  sprintf(message, "%s\n%s\n\n%s", version, build, author);
-  p8_msgbox(P8_MSGBOX_INFORMATION, title, message, &mbtn, 1);
-
   return 0;
 }
 
 int p8_main(int argc, char *argv[]) {
-  return argc > 1 ? p8_run(argc, argv) : p8_showversion();
+  const char *module;
+  u8 *source;
+  WrenVM *vm;
+  WrenInterpretResult result;
+
+  if (argc <= 1)
+    return show_version();
+
+  module = argv[1];
+  source = load_source(module);
+
+  if (!source) {
+    error_box("Could not find file \"%s/main.wren\".\n", module);
+    return -1;
+  }
+
+  vm = init_vm();
+
+  if (!vm)
+    return -1;
+
+  result = wrenInterpret(vm, module, source);
+
+  if (result == WREN_RESULT_SUCCESS) {
+    run();
+  }
+
+  free_vm(vm);
+  free(source);
+
+  return 0;
 }

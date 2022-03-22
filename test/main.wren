@@ -1,5 +1,5 @@
 /*
- * test/main.wren
+ * main.wren
  *
  * Copyright (c) 2022 Xiongfei Shi. All rights reserved.
  *
@@ -15,4 +15,4 @@ class Game {
   }
 }
 
-var main = Game.new()
+System.print("Hello World!")

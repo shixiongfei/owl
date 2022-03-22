@@ -70,7 +70,7 @@ u8 *p8_readfile(const char *filename) {
   if (size < 0)
     return NULL;
 
-  data = (u8 *)malloc(size);
+  data = (u8 *)malloc(size + 1);
 
   if (!data)
     return NULL;
@@ -85,6 +85,7 @@ u8 *p8_readfile(const char *filename) {
   fread(data, size, 1, fp);
   fclose(fp);
 
+  data[size] = 0;
   return data;
 }
 
