@@ -226,13 +226,13 @@ int p8_main(int argc, char *argv[]) {
     return -1;
 
   result = wrenInterpret(vm, module, source);
+  free(source);
 
   if (result == WREN_RESULT_SUCCESS) {
     run();
   }
 
   free_vm(vm);
-  free(source);
 
   return 0;
 }
