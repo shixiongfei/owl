@@ -243,6 +243,27 @@ char *p8_basename(char *outbuf, const char *path, char pathsep) {
   return outbuf;
 }
 
+char *p8_resolvepath(char *outbuf, const char *path, char pathsep) {
+  return strcpy(outbuf, path);
+}
+
+void p8_setcwd(const char *workdir) {
+#ifdef _WIN32
+  SetCurrentDirectoryA(workdir);
+#else
+  chdir(workdir);
+#endif
+}
+
+char *p8_getcwd(char *workdir, s32 size) {
+#ifdef _WIN32
+  GetCurrentDirectoryA(size, workdir);
+#else
+  getcwd(workdir, size);
+#endif
+  return workdir;
+}
+
 bool p8_isexist(const char *path) { return 0 == access(path, 0); }
 
 bool p8_isdir(const char *path) {

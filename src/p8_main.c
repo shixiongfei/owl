@@ -26,6 +26,10 @@
   type *name = (type *)_alloca((size) * sizeof(type))
 #endif
 
+#ifndef MAX_PATH
+#define MAX_PATH 260
+#endif
+
 #define pathdup(path) p8_pathformat(strdup(path), P8_PATHSEP)
 
 #define WREN_MAX_SEARCHES 16
@@ -78,7 +82,7 @@ static bool add_module(ScriptModules *modules, const char *module) {
 }
 
 static bool init_modules(ScriptModules *modules, const char *root) {
-  char module[260] = {0};
+  char module[MAX_PATH] = {0};
 
   if (!add_module(modules, root))
     return false;
@@ -87,7 +91,7 @@ static bool init_modules(ScriptModules *modules, const char *root) {
   p8_pathformat(module, P8_PATHSEP);
   add_module(modules, module);
 
-  /* TODO: Builtin Runtime */
+  /* TODO: Builtin Runtime Scripts */
   add_module(modules, "scripts");
 
   return true;
@@ -123,7 +127,7 @@ static void wren_onerror(WrenVM *vm, WrenErrorType type, const char *module,
 
 static u8 *load_source(WrenVM *vm, const char **module, const char *file) {
   ScriptModules *modules = (ScriptModules *)wrenGetUserData(vm);
-  char path[260] = {0};
+  char path[MAX_PATH] = {0};
   u8 *source;
   s32 i;
 
@@ -164,6 +168,20 @@ static WrenLoadModuleResult load_module(WrenVM *vm, const char *module) {
   return result;
 }
 
+static const char *resolve_module(WrenVM *vm, const char *importer,
+                                  const char *module) {
+  char path[MAX_PATH] = {0};
+  char *resolve;
+
+  p8_dirname(path, importer, P8_PATHSEP);
+  strcat(path, "/");
+  strcat(path, module);
+  p8_pathformat(path, P8_PATHSEP);
+
+  resolve = (char *)malloc(strlen(path) + 1);
+  return p8_resolvepath(resolve, path, P8_PATHSEP);
+}
+
 static WrenVM *init_vm(ScriptModules *modules) {
   WrenConfiguration config;
 
@@ -171,7 +189,7 @@ static WrenVM *init_vm(ScriptModules *modules) {
 
   config.bindForeignMethodFn = NULL;
   config.bindForeignClassFn = NULL;
-  config.resolveModuleFn = NULL;
+  config.resolveModuleFn = resolve_module;
   config.loadModuleFn = load_module;
   config.writeFn = &wren_onwrite;
   config.errorFn = &wren_onerror;

@@ -119,6 +119,10 @@ P8_API const char *p8_selfname(void);
 P8_API char *p8_pathformat(char *path, char pathsep);
 P8_API char *p8_dirname(char *outbuf, const char *path, char pathsep);
 P8_API char *p8_basename(char *outbuf, const char *path, char pathsep);
+P8_API char *p8_resolvepath(char *outbuf, const char *path, char pathsep);
+
+P8_API void p8_setcwd(const char *workdir);
+P8_API char *p8_getcwd(char *workdir, s32 size);
 
 P8_API bool p8_isexist(const char *path);
 P8_API bool p8_isdir(const char *path);
