@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -24,6 +25,19 @@
 #else  /* _WIN32 */
 #include <Windows.h>
 #include <io.h>
+
+#define lstat stat
+
+#ifndef S_IFLNK
+#define S_IFLNK 0120000
+#endif
+
+#define S_ISTYPE(m, TYPE) (TYPE == ((m)&S_IFMT))
+#define S_ISDIR(m) S_ISTYPE(m, S_IFDIR)
+#define S_ISREG(m) S_ISTYPE(m, S_IFREG)
+#define S_ISLNK(m) S_ISTYPE(m, S_IFLNK)
+
+#define access _access
 #endif /* _WIN32 */
 
 #include "p8.h"
@@ -227,4 +241,21 @@ char *p8_basename(char *outbuf, const char *path, char pathsep) {
   outbuf[len] = '\0';
 
   return outbuf;
+}
+
+bool p8_isexist(const char *path) { return 0 == access(path, 0); }
+
+bool p8_isdir(const char *path) {
+  struct stat st;
+  return 0 == lstat(path, &st) ? !!S_ISDIR(st.st_mode) : 0;
+}
+
+bool p8_isfile(const char *path) {
+  struct stat st;
+  return 0 == lstat(path, &st) ? !!S_ISREG(st.st_mode) : 0;
+}
+
+bool p8_islink(const char *path) {
+  struct stat st;
+  return 0 == lstat(path, &st) ? !!S_ISLNK(st.st_mode) : 0;
 }

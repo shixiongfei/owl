@@ -120,6 +120,11 @@ P8_API char *p8_pathformat(char *path, char pathsep);
 P8_API char *p8_dirname(char *outbuf, const char *path, char pathsep);
 P8_API char *p8_basename(char *outbuf, const char *path, char pathsep);
 
+P8_API bool p8_isexist(const char *path);
+P8_API bool p8_isdir(const char *path);
+P8_API bool p8_isfile(const char *path);
+P8_API bool p8_islink(const char *path);
+
 P8_API p8_Dylib p8_dylib(const char *sofile);
 P8_API void *p8_dysym(p8_Dylib dylib, const char *name);
 
