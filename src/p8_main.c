@@ -30,7 +30,7 @@
 #define MAX_PATH 260
 #endif
 
-#define pathdup(path) p8_pathformat(strdup(path), P8_PATHSEP)
+#define pathdup(path) p8_pathformat(strdup(path))
 
 #define WREN_MAX_SEARCHES 16
 
@@ -88,8 +88,7 @@ static bool init_modules(ScriptModules *modules, const char *root) {
     return false;
 
   snprintf(module, sizeof(module), "%s/wren_modules", root);
-  p8_pathformat(module, P8_PATHSEP);
-  add_module(modules, module);
+  add_module(modules, p8_pathformat(module));
 
   /* TODO: Builtin Runtime Scripts */
   add_module(modules, "scripts");
@@ -173,13 +172,16 @@ static const char *resolve_module(WrenVM *vm, const char *importer,
   char path[MAX_PATH] = {0};
   char *resolve;
 
-  p8_dirname(path, importer, P8_PATHSEP);
+  if (p8_pathtype(module) == P8_PATHTYPE_SIMPLE)
+    return module;
+
+  p8_dirname(path, importer);
   strcat(path, "/");
   strcat(path, module);
-  p8_pathformat(path, P8_PATHSEP);
+  p8_pathformat(path);
 
   resolve = (char *)malloc(strlen(path) + 1);
-  return p8_resolvepath(resolve, path, P8_PATHSEP);
+  return p8_resolvepath(resolve, path);
 }
 
 static WrenVM *init_vm(ScriptModules *modules) {

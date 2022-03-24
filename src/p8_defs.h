@@ -61,11 +61,9 @@
 #define P8_BSD 1
 #endif
 
-#ifndef _WIN32
-#define P8_PATHSEP '/'
-#else
-#define P8_PATHSEP '\\'
-#endif
+#define P8_PATHTYPE_ABSOLUTE 0
+#define P8_PATHTYPE_RELATIVE 1
+#define P8_PATHTYPE_SIMPLE 2
 
 #define P8_FORMAT_RGB 3
 #define P8_FORMAT_RGBA 4
