@@ -9,6 +9,8 @@
  * Usage of P8 is subject to the appropriate license agreement.
  */
 
+#include <math.h>
+
 #include "SDL.h"
 #include "utf8.h"
 
@@ -727,6 +729,130 @@ void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
   SDL_SetRenderTarget(app->renderer, canvas);
   SDL_RenderFillRects(app->renderer, (const SDL_Rect *)rects, n);
 }
+
+void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
+  s32 dx, dy, d1, d2, offsetx, offsety;
+
+  offsetx = 0;
+  offsety = ry;
+
+  d1 = (ry * ry) - (rx * rx * ry) + (s32)ceil(0.25 * rx * rx);
+  dx = 2 * ry * ry * offsetx;
+  dy = 2 * rx * rx * offsety;
+
+  while (dx < dy) {
+    p8_pixel(canvas, x + offsetx, y + offsety);
+    p8_pixel(canvas, x - offsetx, y + offsety);
+    p8_pixel(canvas, x + offsetx, y - offsety);
+    p8_pixel(canvas, x - offsetx, y - offsety);
+
+    if (d1 < 0) {
+      offsetx++;
+      dx += 2 * ry * ry;
+      d1 += dx + (ry * ry);
+    } else {
+      offsetx++;
+      offsety--;
+      dx += 2 * ry * ry;
+      dy -= 2 * rx * rx;
+      d1 += dx - dy + (ry * ry);
+    }
+  }
+
+  d2 = ((ry * ry) * (s32)ceil((offsetx + 0.5) * (offsetx + 0.5))) +
+       ((rx * rx) * ((offsety - 1) * (offsety - 1))) - (rx * rx * ry * ry);
+
+  while (offsety >= 0) {
+    p8_pixel(canvas, x + offsetx, y + offsety);
+    p8_pixel(canvas, x - offsetx, y + offsety);
+    p8_pixel(canvas, x + offsetx, y - offsety);
+    p8_pixel(canvas, x - offsetx, y - offsety);
+
+    if (d2 > 0) {
+      offsety--;
+      dy -= 2 * rx * rx;
+      d2 += rx * rx - dy;
+    } else {
+      offsety--;
+      offsetx++;
+      dx += 2 * ry * ry;
+      dy -= 2 * rx * rx;
+      d2 += dx - dy + (rx * rx);
+    }
+  }
+}
+
+void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
+  s32 w = (rx + 1) * 2, h = (ry + 1) * 2;
+  p8_Rect rect = {x - rx, y - ry, w, h};
+  p8_Canvas *texture;
+  s32 dx, dy, d1, d2, offsetx, offsety;
+  u8 alpha;
+
+  texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
+                              SDL_TEXTUREACCESS_TARGET, w, h);
+  if (!texture)
+    return;
+
+  x = rx;
+  y = ry;
+
+  offsetx = 0;
+  offsety = ry;
+
+  d1 = (ry * ry) - (rx * rx * ry) + (s32)ceil(0.25 * rx * rx);
+  dx = 2 * ry * ry * offsetx;
+  dy = 2 * rx * rx * offsety;
+
+  while (dx < dy) {
+    p8_line(texture, x - offsetx, y + offsety, x + offsetx, y + offsety);
+    p8_line(texture, x - offsetx, y - offsety, x + offsetx, y - offsety);
+
+    if (d1 < 0) {
+      offsetx++;
+      dx += 2 * ry * ry;
+      d1 += dx + (ry * ry);
+    } else {
+      offsetx++;
+      offsety--;
+      dx += 2 * ry * ry;
+      dy -= 2 * rx * rx;
+      d1 += dx - dy + (ry * ry);
+    }
+  }
+
+  d2 = ((ry * ry) * (s32)ceil((offsetx + 0.5) * (offsetx + 0.5))) +
+       ((rx * rx) * ((offsety - 1) * (offsety - 1))) - (rx * rx * ry * ry);
+
+  while (offsety >= 0) {
+    p8_line(texture, x - offsetx, y + offsety, x + offsetx, y + offsety);
+    p8_line(texture, x - offsetx, y - offsety, x + offsetx, y - offsety);
+
+    if (d2 > 0) {
+      offsety--;
+      dy -= 2 * rx * rx;
+      d2 += rx * rx - dy;
+    } else {
+      offsety--;
+      offsetx++;
+      dx += 2 * ry * ry;
+      dy -= 2 * rx * rx;
+      d2 += dx - dy + (rx * rx);
+    }
+  }
+
+  SDL_GetRenderDrawColor(app->renderer, NULL, NULL, NULL, &alpha);
+  SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+  SDL_SetTextureAlphaMod(texture, alpha);
+  p8_blit(canvas, texture, NULL, &rect);
+  p8_destroy(texture);
+}
+
+void p8_arc(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end) {}
+
+void p8_pie(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end) {}
+
+void p8_fillpie(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end) {}
 
 void p8_clip(p8_Canvas *canvas, const p8_Rect *rect) {
   SDL_SetRenderTarget(app->renderer, canvas);

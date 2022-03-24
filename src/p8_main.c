@@ -181,6 +181,10 @@ static const char *resolve_module(WrenVM *vm, const char *importer,
   p8_pathformat(path);
 
   resolve = (char *)malloc(strlen(path) + 1);
+
+  if (!resolve)
+    return NULL;
+
   return p8_resolvepath(resolve, path);
 }
 
@@ -229,6 +233,7 @@ static s32 run(void) {
   p8_Rect rect = {150, 150, 500, 50};
   p8_Rect rects[2] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
   p8_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
+  p8_Rect grect = {600, 450, 100, 50};
   p8_Rect hero_pos, clip_text = {200, 50, 110, 12};
   const char *text = "中英文abc混合ABC测试!";
   const s32 SCREEN_W = 800;
@@ -312,6 +317,9 @@ static s32 run(void) {
       p8_text(screen, text, clip_text.x, clip_text.y, p8_rgb(0, 0xff, 0xff));
       p8_clip(screen, NULL);
     }
+
+    p8_fillrect(screen, &grect);
+    p8_fillellipse(screen, 450, 450, 100, 50);
 
     p8_present(screen);
     p8_wait();
