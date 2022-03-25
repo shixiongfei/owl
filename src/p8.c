@@ -773,9 +773,8 @@ void p8_clear(p8_Canvas *canvas) {
 }
 
 void p8_pixel(p8_Canvas *canvas, s32 x, s32 y) {
-  p8_lock(canvas);
-  p8_drawpixel(canvas, x, y, p8_getcolor(canvas));
-  p8_unlock(canvas);
+  p8_Point point = {x, y};
+  p8_pixels(canvas, &point, 1);
 }
 
 void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n) {
@@ -788,29 +787,32 @@ void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n) {
 }
 
 void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2) {
+  p8_Point line[2] = {{x1, y1}, {x2, y2}};
+  p8_lines(canvas, line, 2);
 }
 
 void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n) {
 }
 
 void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
-  SDL_Rect rect = {x, y, w, h};
+  p8_Rect rect = {x, y, w, h};
+  p8_rects(canvas, &rect, 1);
 }
 
 void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
 }
 
 void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
-  SDL_Rect rect = {x, y, w, h};
-  SDL_FillRect(canvas, &rect, p8_getcolor(canvas));
+  p8_Rect rect = {x, y, w, h};
+  p8_fillrects(canvas, &rect, 1);
 }
 
 void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
-  SDL_FillRects(canvas, (const SDL_Rect *)rects, n, p8_getcolor(canvas));
 }
 
 void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   s32 dx, dy, d1, d2, offsetx, offsety;
+  u32 color = p8_getcolor(canvas);
 
   offsetx = 0;
   offsety = ry;
@@ -819,11 +821,16 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   dx = 2 * ry * ry * offsetx;
   dy = 2 * rx * rx * offsety;
 
+  p8_lock(canvas);
+
   while (dx < dy) {
-    p8_pixel(canvas, x + offsetx, y + offsety);
-    p8_pixel(canvas, x - offsetx, y + offsety);
-    p8_pixel(canvas, x + offsetx, y - offsety);
-    p8_pixel(canvas, x - offsetx, y - offsety);
+    p8_drawpixel(canvas, x + offsetx, y + offsety, color);
+    p8_drawpixel(canvas, x - offsetx, y - offsety, color);
+
+    if (x + offsetx != x - offsetx) {
+      p8_drawpixel(canvas, x - offsetx, y + offsety, color);
+      p8_drawpixel(canvas, x + offsetx, y - offsety, color);
+    }
 
     if (d1 < 0) {
       offsetx++;
@@ -842,10 +849,13 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
        ((rx * rx) * ((offsety - 1) * (offsety - 1))) - (rx * rx * ry * ry);
 
   while (offsety >= 0) {
-    p8_pixel(canvas, x + offsetx, y + offsety);
-    p8_pixel(canvas, x - offsetx, y + offsety);
-    p8_pixel(canvas, x + offsetx, y - offsety);
-    p8_pixel(canvas, x - offsetx, y - offsety);
+    p8_drawpixel(canvas, x + offsetx, y + offsety, color);
+    p8_drawpixel(canvas, x - offsetx, y - offsety, color);
+
+    if (y + offsety != y - offsety) {
+      p8_drawpixel(canvas, x - offsetx, y + offsety, color);
+      p8_drawpixel(canvas, x + offsetx, y - offsety, color);
+    }
 
     if (d2 > 0) {
       offsety--;
@@ -859,6 +869,8 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
       d2 += dx - dy + (rx * rx);
     }
   }
+
+  p8_unlock(canvas);
 }
 
 void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
@@ -1010,7 +1022,7 @@ s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
   for (j = 0; j < rect.h; ++j)
     for (i = 0; i < rect.w; ++i) {
       u32 pixel = SDL_MapRGBA(canvas->format, color.r, color.g, color.b,
-                              (u8)(bitmap[j * rect.w + i] * alpha));
+                              (u8)ceilf(alpha * bitmap[j * rect.w + i]));
       p8_drawpixel(canvas, x + i, y + j, pixel);
     }
   p8_unlock(canvas);
