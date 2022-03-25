@@ -710,35 +710,34 @@ P8_INLINE void p8_unlock(p8_Canvas *canvas) {
     SDL_UnlockSurface(canvas);
 }
 
-void p8_color(p8_Canvas *canvas, p8_Pixel color) {
-  u32 rgba = SDL_MapRGBA(canvas->format, color.r, color.g, color.b, color.a);
-  canvas->userdata = (void *)(uword_t)rgba;
-}
-
 P8_INLINE u32 p8_getcolor(p8_Canvas *canvas) {
   return (u32)(uword_t)canvas->userdata;
 }
 
-void p8_clear(p8_Canvas *canvas) {
-  SDL_Rect rect = {0, 0, canvas->w, canvas->h};
-  SDL_FillRect(canvas, &rect, p8_getcolor(canvas));
+P8_INLINE u32 *p8_getpixel(p8_Canvas *canvas, s32 x, s32 y) {
+  return (u32 *)((u8 *)canvas->pixels + y * canvas->pitch +
+                 x * canvas->format->BytesPerPixel);
 }
 
 P8_INLINE u8 p8_blend(u32 d, u32 s, u8 a) {
   return (s + ((d - s) * a >> 8)) & 0xFF;
 }
 
-P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
+P8_INLINE bool p8_clipped(p8_Canvas *canvas, s32 x, s32 y) {
   SDL_Point point = {x, y};
   SDL_Rect clip;
+
+  SDL_GetClipRect(canvas, &clip);
+  return !SDL_PointInRect(&point, &clip);
+}
+
+P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
   u8 R, G, B, A;
   u8 r, g, b, a;
   u8 dR, dG, dB, dA;
   u32 *pixel;
 
-  SDL_GetClipRect(canvas, &clip);
-
-  if (!SDL_PointInRect(&point, &clip))
+  if (p8_clipped(canvas, x, y))
     return;
 
   SDL_GetRGBA(color, canvas->format, &r, &g, &b, &a);
@@ -746,8 +745,8 @@ P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
   if (a == 0)
     return;
 
-  pixel = (u32 *)((u8 *)canvas->pixels + y * canvas->pitch +
-                  x * canvas->format->BytesPerPixel);
+  pixel = p8_getpixel(canvas, x, y);
+
   if (a == 0xFF) {
     *pixel = color;
     return;
@@ -763,15 +762,29 @@ P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
   *pixel = SDL_MapRGBA(canvas->format, dR, dG, dB, dA);
 }
 
+void p8_color(p8_Canvas *canvas, p8_Pixel color) {
+  u32 rgba = SDL_MapRGBA(canvas->format, color.r, color.g, color.b, color.a);
+  canvas->userdata = (void *)(uword_t)rgba;
+}
+
+void p8_clear(p8_Canvas *canvas) {
+  SDL_Rect rect = {0, 0, canvas->w, canvas->h};
+  SDL_FillRect(canvas, &rect, p8_getcolor(canvas));
+}
+
 void p8_pixel(p8_Canvas *canvas, s32 x, s32 y) {
+  p8_lock(canvas);
   p8_drawpixel(canvas, x, y, p8_getcolor(canvas));
+  p8_unlock(canvas);
 }
 
 void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n) {
   u32 color = p8_getcolor(canvas);
 
+  p8_lock(canvas);
   while (n-- > 0)
     p8_drawpixel(canvas, points[n].x, points[n].y, color);
+  p8_unlock(canvas);
 }
 
 void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2) {
@@ -981,6 +994,7 @@ s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
             p8_Pixel color) {
   p8_Font *font = &app->font;
   p8_Rect rect = {x, y, -1, -1};
+  f32 alpha = (f32)color.a / 0xFF;
   u8 *bitmap;
   s32 i, j;
 
@@ -996,7 +1010,7 @@ s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
   for (j = 0; j < rect.h; ++j)
     for (i = 0; i < rect.w; ++i) {
       u32 pixel = SDL_MapRGBA(canvas->format, color.r, color.g, color.b,
-                              bitmap[j * rect.w + i]);
+                              (u8)(bitmap[j * rect.w + i] * alpha));
       p8_drawpixel(canvas, x + i, y + j, pixel);
     }
   p8_unlock(canvas);
