@@ -31,7 +31,7 @@ P8_INLINE p8_Pixel p8_rgba(u8 r, u8 g, u8 b, u8 a) {
 P8_API u64 p8_ticks(void);
 P8_API void p8_sleep(u32 ms);
 
-P8_API bool p8_init(s32 w, s32 h, const char *title, s32 flags);
+P8_API bool p8_init(s32 width, s32 height, const char *title, s32 flags);
 P8_API void p8_quit(void);
 
 P8_API bool p8_setfps(u32 rate);
@@ -50,7 +50,8 @@ P8_API bool p8_textinputactive(void);
 P8_API bool p8_textinputshown(void);
 P8_API void p8_textinputposition(s32 x, s32 y);
 
-P8_API p8_Canvas *p8_canvas(s32 w, s32 h);
+P8_API p8_Canvas *p8_screen(void);
+P8_API p8_Canvas *p8_canvas(s32 width, s32 height);
 P8_API p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, u8 format);
 P8_API p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey);
 P8_API p8_Canvas *p8_load(const char *filename);
@@ -59,8 +60,8 @@ P8_API void p8_destroy(p8_Canvas *canvas);
 
 P8_API void p8_size(p8_Canvas *canvas, s32 *w, s32 *h);
 
-P8_API void p8_clear(p8_Canvas *canvas);
 P8_API void p8_color(p8_Canvas *canvas, p8_Pixel color);
+P8_API void p8_clear(p8_Canvas *canvas);
 
 P8_API void p8_pixel(p8_Canvas *canvas, s32 x, s32 y);
 P8_API void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n);
@@ -68,27 +69,26 @@ P8_API void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n);
 P8_API void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2);
 P8_API void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n);
 
-P8_API void p8_rect(p8_Canvas *canvas, const p8_Rect *rect);
+P8_API void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
 P8_API void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
 
-P8_API void p8_fillrect(p8_Canvas *canvas, const p8_Rect *rect);
+P8_API void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
 P8_API void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
 
 P8_API void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry);
 P8_API void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry);
 
-P8_API void p8_arc(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end);
-P8_API void p8_pie(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end);
-P8_API void p8_fillpie(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start,
-                       f32 end);
+P8_API void p8_arc(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                   f32 theta);
+P8_API void p8_pie(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                   f32 theta);
+P8_API void p8_fillpie(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                       f32 theta);
 
 P8_API void p8_clip(p8_Canvas *canvas, const p8_Rect *rect);
 P8_API void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
                     const p8_Rect *dstrect);
-P8_API void p8_blitex(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
-                      const p8_Rect *dstrect, f64 angle, const p8_Point *center,
-                      u32 flip);
-P8_API void p8_present(p8_Canvas *screen);
+P8_API void p8_present(void);
 
 P8_API p8_Table *p8_table(void);
 P8_API void p8_freetable(p8_Table *table, p8_Dtor dtor);

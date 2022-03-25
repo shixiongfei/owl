@@ -227,14 +227,14 @@ static bool vm_dofile(WrenVM *vm, const char *file) {
 static s32 run(void) {
   bool quit = false;
   p8_Event event;
-  p8_Canvas *screen, *hero;
+  p8_Canvas *screen, *hero, *morph;
   p8_Point points[4] = {{13, 13}, {13, 15}, {15, 13}, {15, 15}};
   p8_Point lines[4] = {{320, 200}, {300, 240}, {340, 240}, {320, 200}};
   p8_Rect rect = {150, 150, 500, 50};
   p8_Rect rects[2] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
   p8_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
-  p8_Rect grect = {600, 450, 100, 50};
   p8_Rect hero_pos, clip_text = {200, 50, 110, 12};
+  p8_Rect morph_pos = {550, 10, 200, 200};
   const char *text = "中英文abc混合ABC测试!";
   const s32 SCREEN_W = 800;
   const s32 SCREEN_H = 600;
@@ -242,12 +242,14 @@ static s32 run(void) {
   if (!p8_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
     return -1;
 
-  screen = p8_canvas(SCREEN_W, SCREEN_H);
+  screen = p8_screen();
 
   if (!screen) {
     p8_quit();
     return -1;
   }
+
+  morph = p8_canvas(200, 200);
 
   p8_loadfont("Unifont", "./unifont.ttf");
 
@@ -316,17 +318,22 @@ static s32 run(void) {
       p8_clip(screen, &clip_text);
       p8_text(screen, text, clip_text.x, clip_text.y, p8_rgb(0, 0xff, 0xff));
       p8_clip(screen, NULL);
+
+      p8_color(morph, p8_rgb(128, 128, 128));
+      p8_clear(morph);
+      p8_text(morph, text, 15, 20, p8_rgb(0xff, 0, 0));
+      p8_blit(screen, morph, NULL, &morph_pos);
     }
 
-    p8_fillrect(screen, &grect);
-    p8_fillellipse(screen, 450, 450, 100, 50);
+    p8_fillrect(screen, 600, 450, 100, 50);
+    p8_ellipse(screen, 450, 450, 100, 50);
+    p8_arc(screen, 500, 300, 550, 350, 3.14*0.5);
 
-    p8_present(screen);
+    p8_present();
     p8_wait();
   }
 
   p8_destroy(hero);
-  p8_destroy(screen);
 
   p8_quit();
   return 0;

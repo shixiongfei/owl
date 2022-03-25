@@ -147,7 +147,7 @@ typedef struct p8_Rect {
 } p8_Rect;
 
 typedef u32 p8_Audio;
-typedef struct SDL_Texture p8_Canvas;
+typedef struct SDL_Surface p8_Canvas;
 typedef struct p8_Table p8_Table;
 typedef void (*p8_Dtor)(void *);
 typedef void *p8_Dylib;

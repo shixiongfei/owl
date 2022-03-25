@@ -37,7 +37,6 @@
 #define P8_SOUND_FLAC 2
 #define P8_SOUND_MP3 3
 
-typedef struct SDL_Surface p8_Image;
 typedef struct stbtt_fontinfo p8_TrueType;
 
 typedef struct p8_Font {
@@ -61,8 +60,10 @@ typedef struct p8_Sound {
 typedef struct p8_Window {
   SDL_Window *window;
   SDL_Renderer *renderer;
+  SDL_Texture *texture;
+  SDL_Surface *screen;
 
-  s32 w, h;
+  s32 width, height;
   u32 rate;
   u32 framecount;
   f32 rateticks;
@@ -318,21 +319,30 @@ u64 p8_ticks(void) {
 
 void p8_sleep(u32 ms) { SDL_Delay(ms); }
 
-bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
-  s32 x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
-  s32 renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
-
+bool p8_init(s32 width, s32 height, const char *title, s32 flags) {
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     goto error;
 
-  app->window = SDL_CreateWindow(title, x, y, w, h, SDL_WINDOW_ALLOW_HIGHDPI);
-
+  app->window =
+      SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                       width, height, SDL_WINDOW_ALLOW_HIGHDPI);
   if (!app->window)
     goto error;
 
-  app->renderer = SDL_CreateRenderer(app->window, -1, renderer_flags);
+  app->renderer = SDL_CreateRenderer(
+      app->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
 
   if (!app->renderer)
+    goto error;
+
+  app->texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
+                                  SDL_TEXTUREACCESS_STREAMING, width, height);
+  if (!app->texture)
+    goto error;
+
+  app->screen = SDL_CreateRGBSurfaceWithFormatFrom(NULL, width, height, 32, 0,
+                                                   SDL_PIXELFORMAT_RGBA32);
+  if (!app->screen)
     goto error;
 
   app->ttfs = p8_table();
@@ -345,14 +355,16 @@ bool p8_init(s32 w, s32 h, const char *title, s32 flags) {
   if (!app->sounds)
     goto error;
 
-  SDL_SetRenderDrawBlendMode(app->renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 0);
+  SDL_LockTexture(app->texture, NULL, &app->screen->pixels,
+                  &app->screen->pitch);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
   SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, "1");
   SDL_DisableScreenSaver();
 
-  app->w = w;
-  app->h = h;
+  app->width = width;
+  app->height = height;
   app->framecount = 0;
   app->rate = P8_FPS_DEFAULT;
   app->rateticks = 1000.0f / (f32)P8_FPS_DEFAULT;
@@ -367,6 +379,17 @@ error:
 }
 
 void p8_quit(void) {
+  if (app->screen) {
+    SDL_FreeSurface(app->screen);
+    app->screen = NULL;
+  }
+
+  if (app->texture) {
+    SDL_UnlockTexture(app->texture);
+    SDL_DestroyTexture(app->texture);
+    app->texture = NULL;
+  }
+
   if (app->renderer) {
     SDL_DestroyRenderer(app->renderer);
     app->renderer = NULL;
@@ -561,36 +584,23 @@ bool p8_textinputactive(void) { return SDL_IsTextInputActive(); }
 bool p8_textinputshown(void) { return strlen(app->edit_text) > 0; }
 
 void p8_textinputposition(s32 x, s32 y) {
-  SDL_Rect rect = {x, y, app->w - x, app->h - y};
+  SDL_Rect rect = {x, y, app->width - x, app->height - y};
   SDL_SetTextInputRect(&rect);
 }
 
-p8_Canvas *p8_canvas(s32 w, s32 h) {
-  p8_Canvas *canvas = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
-                                        SDL_TEXTUREACCESS_TARGET, w, h);
+p8_Canvas *p8_screen(void) { return app->screen; }
+
+p8_Canvas *p8_canvas(s32 width, s32 height) {
+  p8_Canvas *canvas = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32,
+                                                     SDL_PIXELFORMAT_RGBA32);
   if (!canvas)
     return NULL;
 
-  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
-
+  SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_BLEND);
   return canvas;
 }
 
-static p8_Canvas *p8_dynamic(s32 w, s32 h, u8 format) {
-  s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
-                                    : SDL_PIXELFORMAT_RGBA32;
-  s32 a = SDL_TEXTUREACCESS_STREAMING;
-  p8_Canvas *canvas = SDL_CreateTexture(app->renderer, f, a, w, h);
-
-  if (!canvas)
-    return NULL;
-
-  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
-
-  return canvas;
-}
-
-static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, u8 format) {
+static p8_Canvas *p8_surface(const u8 *data, s32 w, s32 h, u8 format) {
   s32 d = format * 8;
   s32 p = format * w;
   s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
@@ -601,38 +611,41 @@ static p8_Image *p8_toimage(s32 w, s32 h, const u8 *data, u8 format) {
   return SDL_CreateRGBSurfaceWithFormatFrom((void *)data, w, h, d, p, f);
 }
 
-static p8_Canvas *p8_tocanvas(p8_Image *image) {
-  p8_Canvas *canvas = SDL_CreateTextureFromSurface(app->renderer, image);
-  SDL_FreeSurface(image);
+static p8_Canvas *p8_tocanvas(p8_Canvas *surface) {
+  p8_Canvas *canvas;
 
-  if (!canvas)
-    return NULL;
+  if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
+    canvas = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+    SDL_FreeSurface(surface);
 
-  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+    SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_BLEND);
+    return canvas;
+  }
 
-  return canvas;
+  SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND);
+  return surface;
 }
 
 p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, u8 format) {
-  p8_Image *image = p8_toimage(w, h, data, format);
+  p8_Canvas *surface = p8_surface(data, w, h, format);
 
-  if (!image)
+  if (!surface)
     return NULL;
 
-  return p8_tocanvas(image);
+  return p8_tocanvas(surface);
 }
 
 p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey) {
-  p8_Image *image = p8_toimage(w, h, data, P8_FORMAT_RGB);
+  p8_Canvas *surface = p8_surface(data, w, h, P8_FORMAT_RGB);
   u32 key;
 
-  if (!image)
+  if (!surface)
     return NULL;
 
-  key = SDL_MapRGB(image->format, colorkey.r, colorkey.g, colorkey.b);
-  SDL_SetColorKey(image, SDL_TRUE, key);
+  key = SDL_MapRGB(surface->format, colorkey.r, colorkey.g, colorkey.b);
+  SDL_SetColorKey(surface, SDL_TRUE, key);
 
-  return p8_tocanvas(image);
+  return p8_tocanvas(surface);
 }
 
 p8_Canvas *p8_load(const char *filename) {
@@ -674,60 +687,110 @@ p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
   return canvas;
 }
 
-void p8_destroy(p8_Canvas *canvas) { SDL_DestroyTexture(canvas); }
-
-void p8_size(p8_Canvas *canvas, s32 *w, s32 *h) {
-  SDL_QueryTexture(canvas, NULL, NULL, w, h);
+void p8_destroy(p8_Canvas *canvas) {
+  if (canvas && canvas != app->screen)
+    SDL_FreeSurface(canvas);
 }
 
-void p8_clear(p8_Canvas *canvas) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderClear(app->renderer);
+void p8_size(p8_Canvas *canvas, s32 *w, s32 *h) {
+  if (w)
+    *w = canvas->w;
+
+  if (h)
+    *h = canvas->h;
+}
+
+P8_INLINE void p8_lock(p8_Canvas *canvas) {
+  if (SDL_MUSTLOCK(canvas))
+    SDL_LockSurface(canvas);
+}
+
+P8_INLINE void p8_unlock(p8_Canvas *canvas) {
+  if (SDL_MUSTLOCK(canvas))
+    SDL_UnlockSurface(canvas);
 }
 
 void p8_color(p8_Canvas *canvas, p8_Pixel color) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_SetRenderDrawColor(app->renderer, color.r, color.g, color.b, color.a);
+  u32 rgba = SDL_MapRGBA(canvas->format, color.r, color.g, color.b, color.a);
+  canvas->userdata = (void *)(uword_t)rgba;
+}
+
+P8_INLINE u32 p8_getcolor(p8_Canvas *canvas) {
+  return (u32)(uword_t)canvas->userdata;
+}
+
+void p8_clear(p8_Canvas *canvas) {
+  SDL_Rect rect = {0, 0, canvas->w, canvas->h};
+  SDL_FillRect(canvas, &rect, p8_getcolor(canvas));
+}
+
+P8_INLINE u8 p8_blend(u32 d, u32 s, u8 a) {
+  return (s + ((d - s) * a >> 8)) & 0xFF;
+}
+
+P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
+  SDL_Point point = {x, y};
+  SDL_Rect clip;
+  u8 sR, sG, sB, sA;
+  u8 r, g, b, a;
+  u32 R, G, B, A;
+  u32 *pixel;
+
+  SDL_GetClipRect(canvas, &clip);
+
+  if (!SDL_PointInRect(&point, &clip))
+    return;
+
+  pixel = (u32 *)((u8 *)canvas->pixels + y * canvas->pitch +
+                  x * canvas->format->BytesPerPixel);
+  SDL_GetRGBA(color, canvas->format, &r, &g, &b, &a);
+
+  if (a == 0xFF) {
+    *pixel = color;
+    return;
+  }
+
+  SDL_GetRGBA(*pixel, canvas->format, &sR, &sG, &sB, &sA);
+
+  R = p8_blend(r, sR, a);
+  G = p8_blend(g, sG, a);
+  B = p8_blend(b, sB, a);
+  A = p8_blend(a, sA, a);
+
+  *pixel = SDL_MapRGBA(canvas->format, R, G, B, A);
 }
 
 void p8_pixel(p8_Canvas *canvas, s32 x, s32 y) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderDrawPoint(app->renderer, x, y);
+  p8_drawpixel(canvas, x, y, p8_getcolor(canvas));
 }
 
 void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderDrawPoints(app->renderer, (const SDL_Point *)points, n);
+  u32 color = p8_getcolor(canvas);
+
+  while (n-- > 0)
+    p8_drawpixel(canvas, points[n].x, points[n].y, color);
 }
 
 void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderDrawLine(app->renderer, x1, y1, x2, y2);
 }
 
 void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderDrawLines(app->renderer, (const SDL_Point *)points, n);
 }
 
-void p8_rect(p8_Canvas *canvas, const p8_Rect *rect) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderDrawRect(app->renderer, (const SDL_Rect *)rect);
+void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
+  SDL_Rect rect = {x, y, w, h};
 }
 
 void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderDrawRects(app->renderer, (const SDL_Rect *)rects, n);
 }
 
-void p8_fillrect(p8_Canvas *canvas, const p8_Rect *rect) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderFillRect(app->renderer, (const SDL_Rect *)rect);
+void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
+  SDL_Rect rect = {x, y, w, h};
+  SDL_FillRect(canvas, &rect, p8_getcolor(canvas));
 }
 
 void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderFillRects(app->renderer, (const SDL_Rect *)rects, n);
+  SDL_FillRects(canvas, (const SDL_Rect *)rects, n, p8_getcolor(canvas));
 }
 
 void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
@@ -783,19 +846,7 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
 }
 
 void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
-  s32 w = (rx + 1) * 2, h = (ry + 1) * 2;
-  p8_Rect rect = {x - rx, y - ry, w, h};
-  p8_Canvas *texture;
   s32 dx, dy, d1, d2, offsetx, offsety;
-  u8 alpha;
-
-  texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
-                              SDL_TEXTUREACCESS_TARGET, w, h);
-  if (!texture)
-    return;
-
-  x = rx;
-  y = ry;
 
   offsetx = 0;
   offsety = ry;
@@ -805,8 +856,8 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   dy = 2 * rx * rx * offsety;
 
   while (dx < dy) {
-    p8_line(texture, x - offsetx, y + offsety, x + offsetx, y + offsety);
-    p8_line(texture, x - offsetx, y - offsety, x + offsetx, y - offsety);
+    p8_line(canvas, x - offsetx, y + offsety, x + offsetx, y + offsety);
+    p8_line(canvas, x - offsetx, y - offsety, x + offsetx, y - offsety);
 
     if (d1 < 0) {
       offsetx++;
@@ -825,8 +876,8 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
        ((rx * rx) * ((offsety - 1) * (offsety - 1))) - (rx * rx * ry * ry);
 
   while (offsety >= 0) {
-    p8_line(texture, x - offsetx, y + offsety, x + offsetx, y + offsety);
-    p8_line(texture, x - offsetx, y - offsety, x + offsetx, y - offsety);
+    p8_line(canvas, x - offsetx, y + offsety, x + offsetx, y + offsety);
+    p8_line(canvas, x - offsetx, y - offsety, x + offsetx, y - offsety);
 
     if (d2 > 0) {
       offsety--;
@@ -840,45 +891,49 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
       d2 += dx - dy + (rx * rx);
     }
   }
-
-  SDL_GetRenderDrawColor(app->renderer, NULL, NULL, NULL, &alpha);
-  SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-  SDL_SetTextureAlphaMod(texture, alpha);
-  p8_blit(canvas, texture, NULL, &rect);
-  p8_destroy(texture);
 }
 
-void p8_arc(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end) {}
+void p8_arc(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2, f32 theta) {
+  f32 dx = x2 - x1;
+  f32 dy = y2 - y1;
+  f32 r2 = dx * dx + dy * dy;
+  f32 r = sqrtf(r2);
+  s32 i, N = 360;
+  f32 ctheta = cosf(theta / (N - 1));
+  f32 stheta = sinf(theta / (N - 1));
 
-void p8_pie(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end) {}
+  p8_pixel(canvas, x1 + dx, y1 + dy);
 
-void p8_fillpie(p8_Canvas *canvas, s32 x, s32 y, s32 r, f32 start, f32 end) {}
+  for (i = 1; i != N; ++i) {
+    f32 t = ctheta * dx - stheta * dy;
+    dy = stheta * dx + ctheta * dy;
+    dx = t;
+    p8_pixel(canvas, x1 + dx, y1 + dy);
+  }
+}
+
+void p8_pie(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2, f32 theta) {}
+
+void p8_fillpie(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2, f32 theta) {}
 
 void p8_clip(p8_Canvas *canvas, const p8_Rect *rect) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderSetClipRect(app->renderer, (const SDL_Rect *)rect);
+  SDL_SetClipRect(canvas, (const SDL_Rect *)rect);
 }
 
 void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
              const p8_Rect *dstrect) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderCopy(app->renderer, src, (const SDL_Rect *)srcrect,
-                 (const SDL_Rect *)dstrect);
+  SDL_BlitScaled(src, (SDL_Rect *)srcrect, canvas, (SDL_Rect *)dstrect);
 }
 
-void p8_blitex(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
-               const p8_Rect *dstrect, f64 angle, const p8_Point *center,
-               u32 flip) {
-  SDL_SetRenderTarget(app->renderer, canvas);
-  SDL_RenderCopyEx(app->renderer, src, (const SDL_Rect *)srcrect,
-                   (const SDL_Rect *)dstrect, angle, (const SDL_Point *)center,
-                   flip);
-}
+void p8_present(void) {
+  SDL_UnlockTexture(app->texture);
 
-void p8_present(p8_Canvas *screen) {
-  SDL_SetRenderTarget(app->renderer, NULL);
-  SDL_RenderCopy(app->renderer, screen, NULL, NULL);
+  SDL_RenderClear(app->renderer);
+  SDL_RenderCopy(app->renderer, app->texture, NULL, NULL);
   SDL_RenderPresent(app->renderer);
+
+  SDL_LockTexture(app->texture, NULL, &app->screen->pixels,
+                  &app->screen->pitch);
 }
 
 bool p8_loadfont(const char *name, const char *filename) {
@@ -923,10 +978,8 @@ s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
             p8_Pixel color) {
   p8_Font *font = &app->font;
   p8_Rect rect = {x, y, -1, -1};
-  p8_Canvas *texture;
-  s32 i, pitch;
-  u32 *pixels;
   u8 *bitmap;
+  s32 i, j;
 
   if (!text)
     return -1;
@@ -936,24 +989,15 @@ s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
   if (!bitmap)
     return -1;
 
-  texture = p8_dynamic(rect.w, rect.h, P8_FORMAT_RGBA);
-
-  if (!texture) {
-    free(bitmap);
-    return -1;
-  }
-
-  SDL_LockTexture(texture, NULL, (void **)&pixels, &pitch);
-  for (i = 0; i < rect.w * rect.h; ++i)
-    pixels[i] = p8_rgba(0xFF, 0xFF, 0xFF, bitmap[i]).rgba;
-  SDL_UnlockTexture(texture);
+  p8_lock(canvas);
+  for (j = 0; j < rect.h; ++j)
+    for (i = 0; i < rect.w; ++i) {
+      u32 pixel = SDL_MapRGBA(canvas->format, color.r, color.g, color.b,
+                              bitmap[j * rect.w + i]);
+      p8_drawpixel(canvas, x + i, y + j, pixel);
+    }
+  p8_unlock(canvas);
   free(bitmap);
-
-  SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
-  SDL_SetTextureAlphaMod(texture, color.a);
-
-  p8_blit(canvas, texture, NULL, &rect);
-  p8_destroy(texture);
 
   return rect.w;
 }
