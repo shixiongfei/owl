@@ -762,6 +762,32 @@ P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
   *pixel = SDL_MapRGBA(canvas->format, dR, dG, dB, dA);
 }
 
+P8_INLINE void p8_drawline(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                           u32 color) {
+  s32 dx = abs(x2 - x1);
+  s32 dy = abs(y2 - y1);
+  s32 sx = x1 < x2 ? 1 : -1;
+  s32 sy = y1 < y2 ? 1 : -1;
+  s32 err = dx - dy;
+  s32 e2;
+
+  do {
+    p8_drawpixel(canvas, x1, y1, color);
+    
+    e2 = 2 * err;
+
+    if (e2 > -dy) {
+      err -= dy;
+      x1 += sx;
+    }
+
+    if (e2 < dx) {
+      err += dx;
+      y1 += sy;
+    }
+  } while (x1 != x2 || y1 != y2);
+}
+
 void p8_color(p8_Canvas *canvas, p8_Pixel color) {
   u32 rgba = SDL_MapRGBA(canvas->format, color.r, color.g, color.b, color.a);
   canvas->userdata = (void *)(uword_t)rgba;
@@ -792,6 +818,20 @@ void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2) {
 }
 
 void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n) {
+  u32 color = p8_getcolor(canvas);
+  const p8_Point *p1 = NULL, *p2 = NULL;
+  s32 i = 0;
+
+  p8_lock(canvas);
+  while (i < n) {
+    p2 = &points[i++];
+
+    if (p1)
+      p8_drawline(canvas, p1->x, p1->y, p2->x, p2->y, color);
+
+    p1 = p2;
+  }
+  p8_unlock(canvas);
 }
 
 void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
