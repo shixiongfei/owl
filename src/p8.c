@@ -731,9 +731,9 @@ P8_INLINE u8 p8_blend(u32 d, u32 s, u8 a) {
 P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
   SDL_Point point = {x, y};
   SDL_Rect clip;
-  u8 sR, sG, sB, sA;
+  u8 R, G, B, A;
   u8 r, g, b, a;
-  u32 R, G, B, A;
+  u8 dR, dG, dB, dA;
   u32 *pixel;
 
   SDL_GetClipRect(canvas, &clip);
@@ -741,23 +741,26 @@ P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
   if (!SDL_PointInRect(&point, &clip))
     return;
 
-  pixel = (u32 *)((u8 *)canvas->pixels + y * canvas->pitch +
-                  x * canvas->format->BytesPerPixel);
   SDL_GetRGBA(color, canvas->format, &r, &g, &b, &a);
 
+  if (a == 0)
+    return;
+
+  pixel = (u32 *)((u8 *)canvas->pixels + y * canvas->pitch +
+                  x * canvas->format->BytesPerPixel);
   if (a == 0xFF) {
     *pixel = color;
     return;
   }
 
-  SDL_GetRGBA(*pixel, canvas->format, &sR, &sG, &sB, &sA);
+  SDL_GetRGBA(*pixel, canvas->format, &R, &G, &B, &A);
 
-  R = p8_blend(r, sR, a);
-  G = p8_blend(g, sG, a);
-  B = p8_blend(b, sB, a);
-  A = p8_blend(a, sA, a);
+  dR = p8_blend(r, R, a);
+  dG = p8_blend(g, G, a);
+  dB = p8_blend(b, B, a);
+  dA = p8_blend(a, A, a);
 
-  *pixel = SDL_MapRGBA(canvas->format, R, G, B, A);
+  *pixel = SDL_MapRGBA(canvas->format, dR, dG, dB, dA);
 }
 
 void p8_pixel(p8_Canvas *canvas, s32 x, s32 y) {
