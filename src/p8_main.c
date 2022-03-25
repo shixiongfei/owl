@@ -304,11 +304,13 @@ static s32 run(void) {
     p8_lines(screen, lines, 4);
 
     p8_color(screen, p8_rgb(255, 174, 201));
-    p8_rects(screen, &rect, 1);
-    p8_fillrects(screen, rects, 2);
+    p8_rect(screen, rect.x, rect.y, rect.w, rect.h);
+    p8_fillrect(screen, rects[0].x, rects[0].y, rects[0].w, rects[0].h);
+    p8_fillrect(screen, rects[1].x, rects[1].y, rects[1].w, rects[1].h);
 
     p8_color(screen, p8_rgba(0, 0xff, 0, 0x5f));
-    p8_fillrects(screen, rects1, 2);
+    p8_fillrect(screen, rects1[0].x, rects1[0].y, rects1[0].w, rects1[0].h);
+    p8_fillrect(screen, rects1[1].x, rects1[1].y, rects1[1].w, rects1[1].h);
 
     p8_blit(screen, hero, NULL, &hero_pos);
 

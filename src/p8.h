@@ -70,10 +70,7 @@ P8_API void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2);
 P8_API void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n);
 
 P8_API void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
-P8_API void p8_rects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
-
 P8_API void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
-P8_API void p8_fillrects(p8_Canvas *canvas, const p8_Rect *rects, s32 n);
 
 P8_API void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry);
 P8_API void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry);
