@@ -50,7 +50,7 @@ static void message_box(s32 type, const char *title, const char *format, ...) {
   nbytes = vsnprintf(NULL, 0, format, ap);
 
   if (nbytes > 0) {
-    dynarray(u8, message, nbytes + 1);
+    dynarray(char, message, nbytes + 1);
     vsnprintf(message, nbytes + 1, format, args);
     p8_msgbox(type, title, message, &mbtn, 1);
   }
@@ -124,7 +124,7 @@ static void wren_onerror(WrenVM *vm, WrenErrorType type, const char *module,
   }
 }
 
-static u8 *load_source(WrenVM *vm, const char **module, const char *file) {
+static char *load_source(WrenVM *vm, const char **module, const char *file) {
   ScriptModules *modules = (ScriptModules *)wrenGetUserData(vm);
   char path[MAX_PATH] = {0};
   u8 *source;
@@ -147,7 +147,7 @@ static u8 *load_source(WrenVM *vm, const char **module, const char *file) {
     if (module)
       *module = modules->searches[i];
 
-    return source;
+    return (char *)source;
   }
   return NULL;
 }
@@ -209,7 +209,7 @@ P8_INLINE void free_vm(WrenVM *vm) { wrenFreeVM(vm); }
 static bool vm_dofile(WrenVM *vm, const char *file) {
   WrenInterpretResult result;
   const char *module;
-  u8 *source;
+  char *source;
 
   source = load_source(vm, &module, file);
 
@@ -327,7 +327,7 @@ static s32 run(void) {
 
     p8_fillrect(screen, 600, 450, 100, 50);
     p8_ellipse(screen, 450, 450, 100, 50);
-    p8_arc(screen, 500, 300, 550, 350, 3.14*0.5);
+    p8_arc(screen, 500, 300, 550, 350, 3.14 * 0.5);
 
     p8_present();
     p8_wait();
