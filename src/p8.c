@@ -817,7 +817,11 @@ void p8_color(p8_Canvas *canvas, p8_Pixel color) {
 }
 
 void p8_clear(p8_Canvas *canvas) {
-  SDL_Rect rect = {0, 0, canvas->w, canvas->h};
+  p8_fill(canvas, 0, 0, canvas->w, canvas->h);
+}
+
+void p8_fill(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
+  SDL_Rect rect = {x, y, w, h};
   SDL_FillRect(canvas, &rect, p8_getcolor(canvas));
 }
 

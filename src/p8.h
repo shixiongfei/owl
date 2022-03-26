@@ -63,6 +63,7 @@ P8_API void p8_blendmode(p8_Canvas *canvas, s32 mode);
 
 P8_API void p8_color(p8_Canvas *canvas, p8_Pixel color);
 P8_API void p8_clear(p8_Canvas *canvas);
+P8_API void p8_fill(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
 
 P8_API void p8_pixel(p8_Canvas *canvas, s32 x, s32 y);
 P8_API void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n);
