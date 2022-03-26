@@ -999,29 +999,6 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   p8_unlock(canvas);
 }
 
-void p8_arc(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2, f32 theta) {
-  f32 dx = x2 - x1;
-  f32 dy = y2 - y1;
-  f32 r2 = dx * dx + dy * dy;
-  f32 r = sqrtf(r2);
-  s32 i, N = 360;
-  f32 ctheta = cosf(theta / (N - 1));
-  f32 stheta = sinf(theta / (N - 1));
-
-  p8_pixel(canvas, x1 + dx, y1 + dy);
-
-  for (i = 1; i != N; ++i) {
-    f32 t = ctheta * dx - stheta * dy;
-    dy = stheta * dx + ctheta * dy;
-    dx = t;
-    p8_pixel(canvas, x1 + dx, y1 + dy);
-  }
-}
-
-void p8_pie(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2, f32 theta) {}
-
-void p8_fillpie(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2, f32 theta) {}
-
 void p8_clip(p8_Canvas *canvas, const p8_Rect *rect) {
   SDL_SetClipRect(canvas, (const SDL_Rect *)rect);
 }
