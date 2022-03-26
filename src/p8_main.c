@@ -334,7 +334,7 @@ static s32 run(void) {
     }
 
     p8_fillrect(screen, 600, 450, 100, 50);
-    p8_ellipse(screen, 450, 450, 100, 50);
+    p8_fillellipse(screen, 450, 450, 100, 50);
     p8_arc(screen, 500, 300, 550, 350, 3.14 * 0.5);
 
     p8_present();
