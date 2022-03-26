@@ -877,15 +877,18 @@ void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
 }
 
 void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
-  s32 dx, dy, d1, d2, offsetx, offsety;
+  s32 dx, dy, d1, d2, rx2, ry2, offsetx, offsety;
   u32 color = p8_getcolor(canvas);
 
   offsetx = 0;
   offsety = ry;
 
-  d1 = (ry * ry) - (rx * rx * ry) + (s32)ceil(0.25 * rx * rx);
-  dx = 2 * ry * ry * offsetx;
-  dy = 2 * rx * rx * offsety;
+  rx2 = rx * rx;
+  ry2 = ry * ry;
+
+  d1 = ry2 - (rx2 * ry) + (s32)ceil(0.25 * rx2);
+  dx = 2 * ry2 * offsetx;
+  dy = 2 * rx2 * offsety;
 
   p8_lock(canvas);
 
@@ -900,19 +903,19 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
 
     if (d1 < 0) {
       offsetx++;
-      dx += 2 * ry * ry;
-      d1 += dx + (ry * ry);
+      dx += ry2 << 1;
+      d1 += dx + ry2;
     } else {
       offsetx++;
       offsety--;
-      dx += 2 * ry * ry;
-      dy -= 2 * rx * rx;
-      d1 += dx - dy + (ry * ry);
+      dx += ry2 << 1;
+      dy -= rx2 << 1;
+      d1 += dx - dy + ry2;
     }
   }
 
-  d2 = ((ry * ry) * (s32)ceil((offsetx + 0.5) * (offsetx + 0.5))) +
-       ((rx * rx) * ((offsety - 1) * (offsety - 1))) - (rx * rx * ry * ry);
+  d2 = (ry2 * (s32)ceil((offsetx + 0.5) * (offsetx + 0.5))) +
+       (rx2 * ((offsety - 1) * (offsety - 1))) - (rx2 * ry2);
 
   while (offsety >= 0) {
     p8_drawpixel(canvas, x + offsetx, y + offsety, color);
@@ -925,14 +928,14 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
 
     if (d2 > 0) {
       offsety--;
-      dy -= 2 * rx * rx;
-      d2 += rx * rx - dy;
+      dy -= rx2 << 1;
+      d2 += rx2 - dy;
     } else {
       offsety--;
       offsetx++;
-      dx += 2 * ry * ry;
-      dy -= 2 * rx * rx;
-      d2 += dx - dy + (rx * rx);
+      dx += ry2 << 1;
+      dy -= rx2 << 1;
+      d2 += dx - dy + rx2;
     }
   }
 
@@ -940,37 +943,40 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
 }
 
 void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
-  s32 dx, dy, d1, d2, offx, offy;
+  s32 dx, dy, d1, d2, rx2, ry2, offx, offy;
   u32 color = p8_getcolor(canvas);
 
   offx = 0;
   offy = ry;
 
-  d1 = (ry * ry) - (rx * rx * ry) + (s32)ceil(0.25 * rx * rx);
-  dx = 2 * ry * ry * offx;
-  dy = 2 * rx * rx * offy;
+  rx2 = rx * rx;
+  ry2 = ry * ry;
+
+  d1 = ry2 - (rx2 * ry) + (s32)ceil(0.25 * rx2);
+  dx = 2 * ry2 * offx;
+  dy = 2 * rx2 * offy;
 
   p8_lock(canvas);
 
   while (dx < dy) {
     if (d1 < 0) {
       offx++;
-      dx += 2 * ry * ry;
-      d1 += dx + (ry * ry);
+      dx += ry2 << 1;
+      d1 += dx + ry2;
     } else {
       p8_drawline(canvas, x - offx, y + offy, x + offx, y + offy, color);
       p8_drawline(canvas, x - offx, y - offy, x + offx, y - offy, color);
 
       offx++;
       offy--;
-      dx += 2 * ry * ry;
-      dy -= 2 * rx * rx;
-      d1 += dx - dy + (ry * ry);
+      dx += ry2 << 1;
+      dy -= rx2 << 1;
+      d1 += dx - dy + ry2;
     }
   }
 
-  d2 = ((ry * ry) * (s32)ceil((offx + 0.5) * (offx + 0.5))) +
-       ((rx * rx) * ((offy - 1) * (offy - 1))) - (rx * rx * ry * ry);
+  d2 = (ry2 * (s32)ceil((offx + 0.5) * (offx + 0.5))) +
+       (rx2 * ((offy - 1) * (offy - 1))) - (rx2 * ry2);
 
   while (offy > 0) {
     p8_drawline(canvas, x - offx, y + offy, x + offx, y + offy, color);
@@ -978,14 +984,14 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
 
     if (d2 > 0) {
       offy--;
-      dy -= 2 * rx * rx;
-      d2 += rx * rx - dy;
+      dy -= rx2 << 1;
+      d2 += rx2 - dy;
     } else {
       offy--;
       offx++;
-      dx += 2 * ry * ry;
-      dy -= 2 * rx * rx;
-      d2 += dx - dy + (rx * rx);
+      dx += ry2 << 1;
+      dy -= rx2 << 1;
+      d2 += dx - dy + rx2;
     }
   }
 

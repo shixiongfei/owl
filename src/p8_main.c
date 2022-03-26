@@ -335,6 +335,13 @@ static s32 run(void) {
 
     p8_fillrect(screen, 600, 450, 100, 50);
     p8_fillellipse(screen, 450, 450, 100, 50);
+
+    p8_blendmode(screen, P8_BLEND_NONE);
+    p8_color(screen, p8_rgba(0, 0, 0, 0));
+    p8_fillellipse(screen, 450, 450, 90, 40);
+    p8_blendmode(screen, P8_BLEND_ALPHA);
+
+    p8_color(screen, p8_rgba(0, 0xff, 0, 0x5f));
     p8_arc(screen, 500, 300, 550, 350, 3.14 * 0.5);
 
     p8_present();
