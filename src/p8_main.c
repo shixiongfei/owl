@@ -323,7 +323,13 @@ static s32 run(void) {
 
       p8_color(morph, p8_rgb(128, 128, 128));
       p8_clear(morph);
-      p8_text(morph, text, 15, 20, p8_rgb(0xff, 0, 0));
+      p8_text(morph, text, 15, 20, p8_rgb(0xff, 0xff, 0));
+
+      p8_blendmode(morph, P8_BLEND_NONE);
+      p8_color(morph, p8_rgba(0, 0, 0, 0));
+      p8_fillrect(morph, 50, 50, 50, 50);
+      p8_blendmode(morph, P8_BLEND_ALPHA);
+
       p8_blit(screen, morph, NULL, &morph_pos);
     }
 

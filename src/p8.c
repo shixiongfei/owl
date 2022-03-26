@@ -700,6 +700,18 @@ void p8_size(p8_Canvas *canvas, s32 *w, s32 *h) {
     *h = canvas->h;
 }
 
+void p8_blendmode(p8_Canvas *canvas, s32 mode) {
+  switch (mode) {
+  case P8_BLEND_ALPHA:
+    SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_BLEND);
+    break;
+  case P8_BLEND_NONE:
+  default:
+    SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_NONE);
+    break;
+  }
+}
+
 P8_INLINE void p8_lock(p8_Canvas *canvas) {
   if (SDL_MUSTLOCK(canvas))
     SDL_LockSurface(canvas);
@@ -732,20 +744,31 @@ P8_INLINE bool p8_clipped(p8_Canvas *canvas, s32 x, s32 y) {
 }
 
 P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
-  u8 R, G, B, A;
   u8 r, g, b, a;
+  u8 R, G, B, A;
   u8 dR, dG, dB, dA;
+  SDL_BlendMode mode; 
   u32 *pixel;
 
   if (p8_clipped(canvas, x, y))
     return;
 
+  pixel = p8_getpixel(canvas, x, y);
+
+  if (!pixel)
+    return;
+
+  SDL_GetSurfaceBlendMode(canvas, &mode);
+
+  if (mode != SDL_BLENDMODE_BLEND) {
+    *pixel = color;
+    return;
+  }
+
   SDL_GetRGBA(color, canvas->format, &r, &g, &b, &a);
 
   if (a == 0)
     return;
-
-  pixel = p8_getpixel(canvas, x, y);
 
   if (a == 0xFF) {
     *pixel = color;

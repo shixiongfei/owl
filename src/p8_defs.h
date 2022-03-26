@@ -68,9 +68,8 @@
 #define P8_FORMAT_RGB 3
 #define P8_FORMAT_RGBA 4
 
-#define P8_FLIP_NONE 0
-#define P8_FLIP_HORIZONTAL 1
-#define P8_FLIP_VERTICAL 2
+#define P8_BLEND_NONE 0
+#define P8_BLEND_ALPHA 1
 
 #define P8_AUDIO_U8 0
 #define P8_AUDIO_S8 1
