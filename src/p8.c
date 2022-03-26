@@ -863,6 +863,13 @@ void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
 }
 
 void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
+  u32 color = p8_getcolor(canvas);
+  s32 i;
+
+  p8_lock(canvas);
+  for (i = 0; i < h; ++i)
+    p8_drawline(canvas, x, y + i, x + w, y + i, color);
+  p8_unlock(canvas);
 }
 
 void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
