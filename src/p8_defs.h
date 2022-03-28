@@ -145,6 +145,12 @@ typedef struct p8_Rect {
   s32 w, h;
 } p8_Rect;
 
+typedef struct p8_Matrix {
+  f32 a, c, tx;
+  f32 b, d, ty;
+  /*  0, 0, 1 */
+} p8_Matrix;
+
 typedef u32 p8_Audio;
 typedef struct SDL_Surface p8_Canvas;
 typedef struct p8_Table p8_Table;

@@ -336,7 +336,7 @@ bool p8_init(s32 width, s32 height, const char *title, s32 flags) {
     goto error;
 
   app->texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
-                                  SDL_TEXTUREACCESS_STREAMING, width, height);
+                                   SDL_TEXTUREACCESS_STREAMING, width, height);
   if (!app->texture)
     goto error;
 
@@ -467,7 +467,7 @@ s32 p8_msgbox(s32 type, const char *title, const char *message,
     data.flags = SDL_MESSAGEBOX_INFORMATION;
     break;
   }
-  
+
   data.window = app->window;
   data.title = title;
   data.message = message;
@@ -747,7 +747,7 @@ P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
   u8 r, g, b, a;
   u8 R, G, B, A;
   u8 dR, dG, dB, dA;
-  SDL_BlendMode mode; 
+  SDL_BlendMode mode;
   u32 *pixel;
 
   if (p8_clipped(canvas, x, y))
@@ -796,7 +796,7 @@ P8_INLINE void p8_drawline(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
 
   do {
     p8_drawpixel(canvas, x1, y1, color);
-    
+
     e2 = 2 * err;
 
     if (e2 > -dy) {
@@ -1057,8 +1057,7 @@ bool p8_font(const char *name, s32 size) {
   return true;
 }
 
-s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y,
-            p8_Pixel color) {
+s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y, p8_Pixel color) {
   p8_Font *font = &app->font;
   p8_Rect rect = {x, y, -1, -1};
   f32 alpha = (f32)color.a / 0xFF;
