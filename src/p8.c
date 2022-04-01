@@ -333,6 +333,10 @@ bool p8_init(s32 width, s32 height, const char *title, s32 flags) {
       app->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
 
   if (!app->renderer)
+    app->renderer = SDL_CreateRenderer(
+        app->window, -1, SDL_RENDERER_SOFTWARE | SDL_RENDERER_TARGETTEXTURE);
+
+  if (!app->renderer)
     goto error;
 
   app->texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
