@@ -32,12 +32,48 @@
 
 #define pathdup(path) p8_pathformat(strdup(path))
 
-#define WREN_MAX_SEARCHES 16
+#define MAX_SEARCHES 16
+#define MAX_METHODS_PER_CLASS 14
+#define MAX_CLASSES_PER_MODULE 6
 
 typedef struct ScriptModules {
   s32 size;
-  char *searches[WREN_MAX_SEARCHES];
+  char *searches[MAX_SEARCHES];
 } ScriptModules;
+
+typedef struct MethodRegistry {
+  bool isstatic;
+  const char *signature;
+  WrenForeignMethodFn method;
+} MethodRegistry;
+
+typedef struct ClassRegistry {
+  const char *name;
+  MethodRegistry methods[MAX_METHODS_PER_CLASS];
+} ClassRegistry;
+
+typedef struct ModuleRegistry {
+  const char *name;
+  const char **source;
+  ClassRegistry classes[MAX_CLASSES_PER_MODULE];
+} ModuleRegistry;
+
+#define SENTINEL_METHOD { false, NULL, NULL }
+#define SENTINEL_CLASS { NULL, { SENTINEL_METHOD } }
+#define SENTINEL_MODULE {NULL, NULL, { SENTINEL_CLASS } }
+
+#define MODULE(name) { #name, &name##ModuleSource, {
+#define END_MODULE SENTINEL_CLASS } },
+
+#define CLASS(name) { #name, {
+#define END_CLASS SENTINEL_METHOD } },
+
+#define METHOD(signature, fn) { false, signature, fn },
+#define STATIC_METHOD(signature, fn) { true, signature, fn },
+#define ALLOCATE(fn) { true, "<allocate>", (WrenForeignMethodFn)fn },
+#define FINALIZE(fn) { true, "<finalize>", (WrenForeignMethodFn)fn },
+
+static ModuleRegistry modules[] = {SENTINEL_MODULE};
 
 static void message_box(s32 type, const char *title, const char *format, ...) {
   p8_MsgBoxButton mbtn = {P8_MSGBOX_RETURNKEY | P8_MSGBOX_ESCKEY, 0, "OK"};
@@ -68,7 +104,7 @@ static s32 show_version(void) {
 }
 
 static bool add_module(ScriptModules *modules, const char *module) {
-  if (modules->size >= WREN_MAX_SEARCHES)
+  if (modules->size >= MAX_SEARCHES)
     return false;
 
   if (!p8_isexist(module))
