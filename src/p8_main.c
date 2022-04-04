@@ -188,13 +188,27 @@ static const char *resolve_module(WrenVM *vm, const char *importer,
   return p8_resolvepath(resolve, path);
 }
 
+static WrenForeignMethodFn bind_foreignmethod(WrenVM *vm, const char *module,
+                                              const char *classname,
+                                              bool isstatic,
+                                              const char *signature) {
+  return NULL;
+}
+
+static WrenForeignClassMethods bind_foreignclass(WrenVM *vm, const char *module,
+                                                 const char *classname) {
+  WrenForeignClassMethods methods = {NULL, NULL};
+
+  return methods;
+}
+
 static WrenVM *init_vm(ScriptModules *modules) {
   WrenConfiguration config;
 
   wrenInitConfiguration(&config);
 
-  config.bindForeignMethodFn = NULL;
-  config.bindForeignClassFn = NULL;
+  config.bindForeignMethodFn = bind_foreignmethod;
+  config.bindForeignClassFn = bind_foreignclass;
   config.resolveModuleFn = resolve_module;
   config.loadModuleFn = load_module;
   config.writeFn = &wren_onwrite;
