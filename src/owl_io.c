@@ -1,12 +1,12 @@
 /*
- * p8_io.c
+ * owl_io.c
  *
  * Copyright (c) 2022 Xiongfei Shi. All rights reserved.
  *
  * Author: Xiongfei Shi <xiongfei.shi(a)icloud.com>
  *
- * This file is part of P8.
- * Usage of P8 is subject to the appropriate license agreement.
+ * This file is part of Owl.
+ * Usage of Owl is subject to the appropriate license agreement.
  */
 
 #include <fcntl.h>
@@ -27,8 +27,8 @@
 #include <sys/param.h>
 #endif /* __linux__ */
 
-#define P8_PATHSEP '/'
-#else  /* _WIN32 */
+#define OWL_PATHSEP '/'
+#else /* _WIN32 */
 #include <Windows.h>
 #include <io.h>
 
@@ -45,10 +45,10 @@
 
 #define access _access
 
-#define P8_PATHSEP '\\'
+#define OWL_PATHSEP '\\'
 #endif /* _WIN32 */
 
-#include "p8.h"
+#include "owl.h"
 
 #ifndef MAX_PATH
 #if defined(MAXPATHLEN)
@@ -66,14 +66,14 @@
 #define O_BINARY 0
 #endif
 
-#define P8_PATH_MAX_COMPONENTS (MAX_PATH >> 1)
+#define OWL_PATH_MAX_COMPONENTS (MAX_PATH >> 1)
 
-typedef struct p8_PathSlice {
+typedef struct owl_PathSlice {
   const char *start;
   const char *end;
-} p8_PathSlice;
+} owl_PathSlice;
 
-s64 p8_filesize(const char *filename) {
+s64 owl_filesize(const char *filename) {
   s64 size;
   int fp;
 
@@ -89,12 +89,12 @@ s64 p8_filesize(const char *filename) {
   return size;
 }
 
-u8 *p8_readfile(const char *filename) {
+u8 *owl_readfile(const char *filename) {
   FILE *fp;
   s64 size;
   u8 *data;
 
-  size = p8_filesize(filename);
+  size = owl_filesize(filename);
 
   if (size < 0)
     return NULL;
@@ -118,7 +118,7 @@ u8 *p8_readfile(const char *filename) {
   return data;
 }
 
-int p8_tempfile(const char *filename) {
+int owl_tempfile(const char *filename) {
   int fd = -1;
 
   if (!filename)
@@ -131,7 +131,7 @@ int p8_tempfile(const char *filename) {
   return fd;
 }
 
-const char *p8_selfname(void) {
+const char *owl_selfname(void) {
   static char buffer[MAX_PATH] = {0};
 
   if (!buffer[0]) {
@@ -160,7 +160,7 @@ const char *p8_selfname(void) {
   return buffer;
 }
 
-P8_INLINE bool p8_isseparator(char ch) {
+OWL_INLINE bool owl_isseparator(char ch) {
   if (ch == '/')
     return true;
 
@@ -172,20 +172,20 @@ P8_INLINE bool p8_isseparator(char ch) {
   return false;
 }
 
-char *p8_pathformat(char *path) {
+char *owl_pathformat(char *path) {
   char *ptr = path;
   s32 i, j = 0;
 
   while (*ptr) {
-    if (p8_isseparator(*ptr))
-      *ptr = P8_PATHSEP;
+    if (owl_isseparator(*ptr))
+      *ptr = OWL_PATHSEP;
 
     ptr += 1;
     j += 1;
   }
 
   for (i = 0; i < (j - 1); ++i) {
-    if ((P8_PATHSEP == path[i]) && (path[i] == path[i + 1])) {
+    if ((OWL_PATHSEP == path[i]) && (path[i] == path[i + 1])) {
       memmove(&path[i], &path[i + 1], j - i);
 
       i -= 1;
@@ -197,7 +197,7 @@ char *p8_pathformat(char *path) {
   return path;
 }
 
-char *p8_dirname(char *outbuf, const char *path) {
+char *owl_dirname(char *outbuf, const char *path) {
   const char *endp;
   s32 len;
 
@@ -210,22 +210,22 @@ char *p8_dirname(char *outbuf, const char *path) {
 
   /* Strip trailing slashes */
   endp = path + strlen(path) - 1;
-  while (endp > path && p8_isseparator(*endp))
+  while (endp > path && owl_isseparator(*endp))
     endp--;
 
   /* Find the start of the dir */
-  while (endp > path && !p8_isseparator(*endp))
+  while (endp > path && !owl_isseparator(*endp))
     endp--;
 
   /* Either the dir is "/" or there are no slashes */
   if (endp == path) {
-    outbuf[0] = p8_isseparator(*endp) ? P8_PATHSEP : '.';
+    outbuf[0] = owl_isseparator(*endp) ? OWL_PATHSEP : '.';
     outbuf[1] = '\0';
     return outbuf;
   } else {
     do {
       endp--;
-    } while (endp > path && p8_isseparator(*endp));
+    } while (endp > path && owl_isseparator(*endp));
   }
 
   len = (s32)(endp - path + 1);
@@ -235,7 +235,7 @@ char *p8_dirname(char *outbuf, const char *path) {
   return outbuf;
 }
 
-char *p8_basename(char *outbuf, const char *path) {
+char *owl_basename(char *outbuf, const char *path) {
   const char *endp, *startp;
   s32 len;
 
@@ -248,19 +248,19 @@ char *p8_basename(char *outbuf, const char *path) {
 
   /* Strip trailing slashes */
   endp = path + strlen(path) - 1;
-  while (endp > path && p8_isseparator(*endp))
+  while (endp > path && owl_isseparator(*endp))
     endp--;
 
   /* All slashes becomes "/" */
-  if (endp == path && p8_isseparator(*endp)) {
-    outbuf[0] = P8_PATHSEP;
+  if (endp == path && owl_isseparator(*endp)) {
+    outbuf[0] = OWL_PATHSEP;
     outbuf[1] = '\0';
     return outbuf;
   }
 
   /* Find the start of the base */
   startp = endp;
-  while (startp > path && !p8_isseparator(*(startp - 1)))
+  while (startp > path && !owl_isseparator(*(startp - 1)))
     startp--;
 
   len = (s32)(endp - startp + 1);
@@ -271,41 +271,41 @@ char *p8_basename(char *outbuf, const char *path) {
 }
 
 #ifdef _WIN32
-P8_INLINE bool p8_isdriveletter(char ch) {
+OWL_INLINE bool owl_isdriveletter(char ch) {
   return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
 }
 #endif
 
-P8_INLINE s32 p8_absprefixlen(const char *path) {
+OWL_INLINE s32 owl_absprefixlen(const char *path) {
 #ifdef _WIN32
-  if (p8_isdriveletter(path[0]) && path[1] == ':')
-    return p8_isseparator(path[2]) ? 3 : 2;
+  if (owl_isdriveletter(path[0]) && path[1] == ':')
+    return owl_isseparator(path[2]) ? 3 : 2;
 #endif
-  return p8_isseparator(path[0]) ? 1 : 0;
+  return owl_isseparator(path[0]) ? 1 : 0;
 }
 
-s32 p8_pathtype(const char *path) {
-  if (p8_absprefixlen(path) > 0)
-    return P8_PATHTYPE_ABSOLUTE;
+s32 owl_pathtype(const char *path) {
+  if (owl_absprefixlen(path) > 0)
+    return OWL_PATHTYPE_ABSOLUTE;
 
-  if (path[0] == '.' && p8_isseparator(path[1]))
-    return P8_PATHTYPE_RELATIVE;
+  if (path[0] == '.' && owl_isseparator(path[1]))
+    return OWL_PATHTYPE_RELATIVE;
 
-  if (path[0] == '.' && path[1] == '.' && p8_isseparator(path[2]))
-    return P8_PATHTYPE_RELATIVE;
+  if (path[0] == '.' && path[1] == '.' && owl_isseparator(path[2]))
+    return OWL_PATHTYPE_RELATIVE;
 
-  return P8_PATHTYPE_SIMPLE;
+  return OWL_PATHTYPE_SIMPLE;
 }
 
-char *p8_resolvepath(char *outbuf, const char *path) {
-  p8_PathSlice components[P8_PATH_MAX_COMPONENTS] = {0};
-  const char *startp = path + p8_absprefixlen(path);
+char *owl_resolvepath(char *outbuf, const char *path) {
+  owl_PathSlice components[OWL_PATH_MAX_COMPONENTS] = {0};
+  const char *startp = path + owl_absprefixlen(path);
   const char *endp = startp;
   s32 i, len, offset = 0, leading = 0, num_comp = 0;
   bool needsep = false;
 
   for (;;) {
-    if (*endp == '\0' || p8_isseparator(*endp)) {
+    if (*endp == '\0' || owl_isseparator(*endp)) {
       /* Add the current component. */
       if (startp != endp) {
         len = (s32)(endp - startp);
@@ -320,7 +320,7 @@ char *p8_resolvepath(char *outbuf, const char *path) {
             leading++; /* Can't back out any further, so preserve the "..". */
         } else {
           /* Cannot have any more path components */
-          if (num_comp > P8_PATH_MAX_COMPONENTS)
+          if (num_comp > OWL_PATH_MAX_COMPONENTS)
             return NULL;
 
           components[num_comp].start = startp;
@@ -330,7 +330,7 @@ char *p8_resolvepath(char *outbuf, const char *path) {
       }
 
       /* Skip over separators. */
-      while (*endp != '\0' && p8_isseparator(*endp))
+      while (*endp != '\0' && owl_isseparator(*endp))
         endp++;
 
       startp = endp;
@@ -342,27 +342,27 @@ char *p8_resolvepath(char *outbuf, const char *path) {
     endp++;
   }
 
-  len = p8_absprefixlen(path);
+  len = owl_absprefixlen(path);
   if (len > 0) {
     /* It's an absolute path, so preserve the absolute prefix. */
     strncpy(outbuf + offset, path, len);
     offset += len;
 
     /* Fix the separator */
-    if (p8_isseparator(outbuf[offset - 1]))
-      outbuf[offset - 1] = P8_PATHSEP;
+    if (owl_isseparator(outbuf[offset - 1]))
+      outbuf[offset - 1] = OWL_PATHSEP;
   } else if (leading > 0) {
     /* Add any leading "..". */
     for (i = 0; i < leading; ++i) {
       if (needsep)
-        outbuf[offset++] = P8_PATHSEP;
+        outbuf[offset++] = OWL_PATHSEP;
 
       outbuf[offset++] = '.';
       outbuf[offset++] = '.';
 
       needsep = true;
     }
-  } else if (path[0] == '.' && p8_isseparator(path[1])) {
+  } else if (path[0] == '.' && owl_isseparator(path[1])) {
     /* Preserve a leading "./" */
     outbuf[offset++] = '.';
     needsep = true;
@@ -372,7 +372,7 @@ char *p8_resolvepath(char *outbuf, const char *path) {
     len = (s32)(components[i].end - components[i].start);
 
     if (needsep)
-      outbuf[offset++] = P8_PATHSEP;
+      outbuf[offset++] = OWL_PATHSEP;
 
     strncpy(outbuf + offset, components[i].start, len);
     offset += len;
@@ -387,7 +387,7 @@ char *p8_resolvepath(char *outbuf, const char *path) {
   return outbuf;
 }
 
-void p8_setcwd(const char *workdir) {
+void owl_setcwd(const char *workdir) {
 #ifdef _WIN32
   SetCurrentDirectoryA(workdir);
 #else
@@ -395,7 +395,7 @@ void p8_setcwd(const char *workdir) {
 #endif
 }
 
-char *p8_getcwd(char *workdir, s32 size) {
+char *owl_getcwd(char *workdir, s32 size) {
 #ifdef _WIN32
   GetCurrentDirectoryA(size, workdir);
 #else
@@ -404,19 +404,19 @@ char *p8_getcwd(char *workdir, s32 size) {
   return workdir;
 }
 
-bool p8_isexist(const char *path) { return 0 == access(path, 0); }
+bool owl_isexist(const char *path) { return 0 == access(path, 0); }
 
-bool p8_isdir(const char *path) {
+bool owl_isdir(const char *path) {
   struct stat st;
   return 0 == lstat(path, &st) ? !!S_ISDIR(st.st_mode) : 0;
 }
 
-bool p8_isfile(const char *path) {
+bool owl_isfile(const char *path) {
   struct stat st;
   return 0 == lstat(path, &st) ? !!S_ISREG(st.st_mode) : 0;
 }
 
-bool p8_islink(const char *path) {
+bool owl_islink(const char *path) {
   struct stat st;
   return 0 == lstat(path, &st) ? !!S_ISLNK(st.st_mode) : 0;
 }

@@ -41,7 +41,7 @@ workspace ( "owl" )
     targetdir ( "./bin" )
     targetname ( "OwlCore" )
     links { "SDL2" }
-    defines { "_UNICODE", "OWL_BUILD" }
+    defines { "_UNICODE", "OWL_BUILD_DLL" }
     staticruntime "On"
 
     filter ( "configurations:Release" )
@@ -116,6 +116,13 @@ workspace ( "owl" )
       defines { "WIN32", "_WIN32", "_WINDOWS",
                 "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
                 "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      links { "SDL2" }
+
+    filter { "action:vs*", "configurations:Release" }
+      libdirs { "./libs/sdl2/Release" }
+
+    filter { "action:vs*", "configurations:Debug" }
+      libdirs { "./libs/sdl2/Debug" }
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"

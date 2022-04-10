@@ -1,12 +1,12 @@
 /*
- * p8.c
+ * owl.c
  *
  * Copyright (c) 2022 Xiongfei Shi. All rights reserved.
  *
  * Author: Xiongfei Shi <xiongfei.shi(a)icloud.com>
  *
- * This file is part of P8.
- * Usage of P8 is subject to the appropriate license agreement.
+ * This file is part of Owl.
+ * Usage of Owl is subject to the appropriate license agreement.
  */
 
 #include <math.h>
@@ -26,38 +26,38 @@
 #define DR_MP3_IMPLEMENTATION
 #include "dr_mp3.h"
 
-#include "p8.h"
+#include "owl.h"
 
-#define P8_FPS_UPPER_LIMIT 100
-#define P8_FPS_LOWER_LIMIT 1
-#define P8_FPS_DEFAULT 60
+#define OWL_FPS_UPPER_LIMIT 100
+#define OWL_FPS_LOWER_LIMIT 1
+#define OWL_FPS_DEFAULT 60
 
-#define P8_SOUND_NONE 0
-#define P8_SOUND_WAV 1
-#define P8_SOUND_FLAC 2
-#define P8_SOUND_MP3 3
+#define OWL_SOUND_NONE 0
+#define OWL_SOUND_WAV 1
+#define OWL_SOUND_FLAC 2
+#define OWL_SOUND_MP3 3
 
-typedef struct stbtt_fontinfo p8_TrueType;
+typedef struct stbtt_fontinfo owl_TrueType;
 
-typedef struct p8_Font {
-  p8_TrueType *ttf;
+typedef struct owl_Font {
+  owl_TrueType *ttf;
   s32 ascent;
   s32 descent;
   s32 linegap;
   f32 scale;
   f32 baseline;
   f32 height;
-} p8_Font;
+} owl_Font;
 
-typedef struct p8_Sound {
+typedef struct owl_Sound {
   SDL_AudioSpec spec;
-  p8_Audio audio;
+  owl_Audio audio;
   u32 type;
   u32 size;
   u8 *buffer;
-} p8_Sound;
+} owl_Sound;
 
-typedef struct p8_Window {
+typedef struct owl_Window {
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *texture;
@@ -70,27 +70,27 @@ typedef struct p8_Window {
   u64 baseticks;
   u64 lastticks;
 
-  p8_Table *ttfs;
-  p8_Font font;
+  owl_Table *ttfs;
+  owl_Font font;
 
-  p8_Table *sounds;
+  owl_Table *sounds;
 
   char input_text[32];
   char edit_text[32];
-} p8_Window;
+} owl_Window;
 
-static p8_Window p8_app = {0};
-static p8_Window *app = &p8_app;
+static owl_Window owl_app = {0};
+static owl_Window *app = &owl_app;
 
-static p8_TrueType *p8_loadttf(const char *filename) {
-  u8 *data = p8_readfile(filename);
-  p8_TrueType *ttf;
+static owl_TrueType *owl_loadttf(const char *filename) {
+  u8 *data = owl_readfile(filename);
+  owl_TrueType *ttf;
   s32 offset;
 
   if (!data)
     return NULL;
 
-  ttf = (p8_TrueType *)malloc(sizeof(p8_TrueType));
+  ttf = (owl_TrueType *)malloc(sizeof(owl_TrueType));
 
   if (!ttf) {
     free(data);
@@ -107,12 +107,12 @@ static p8_TrueType *p8_loadttf(const char *filename) {
   return ttf;
 }
 
-static void p8_ttffree(p8_TrueType *ttf) {
+static void owl_ttffree(owl_TrueType *ttf) {
   free(ttf->data);
   free(ttf);
 }
 
-static f32 p8_ttfwide(p8_Font *font, ucs4_t ch, ucs4_t last) {
+static f32 owl_ttfwide(owl_Font *font, ucs4_t ch, ucs4_t last) {
   s32 ax, lsb, kern = 0;
 
   stbtt_GetCodepointHMetrics(font->ttf, ch, &ax, &lsb);
@@ -123,21 +123,21 @@ static f32 p8_ttfwide(p8_Font *font, ucs4_t ch, ucs4_t last) {
   return (ax + kern) * font->scale;
 }
 
-static f32 p8_ttfwidth(p8_Font *font, const char *text) {
+static f32 owl_ttfwidth(owl_Font *font, const char *text) {
   const char *p = text;
   f32 width = 0;
   ucs4_t ch, last = 0;
 
   while (*p) {
     p += utf8_tounicode(p, &ch);
-    width += p8_ttfwide(font, ch, last);
+    width += owl_ttfwide(font, ch, last);
     last = ch;
   }
   return ceilf(width);
 }
 
-static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
-  p8_TrueType *ttf = font->ttf;
+static u8 *owl_ttfbitmap(owl_Font *font, const char *text, s32 *w, s32 *h) {
+  owl_TrueType *ttf = font->ttf;
   const char *p = text;
   ucs4_t ch, last = 0;
   s32 x, y, x1, y1, x2, y2;
@@ -147,7 +147,7 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
   if (!ttf)
     return NULL;
 
-  *w = (s32)p8_ttfwidth(font, text);
+  *w = (s32)owl_ttfwidth(font, text);
   *h = (s32)font->height;
 
   bitmap = (u8 *)calloc(1, *w * *h);
@@ -173,15 +173,15 @@ static u8 *p8_ttfbitmap(p8_Font *font, const char *text, s32 *w, s32 *h) {
 
     stbtt_MakeCodepointBitmapSubpixel(ttf, pixels, *w - x, *h - y, *w,
                                       font->scale, font->scale, xfract, 0, ch);
-    xoff += p8_ttfwide(font, ch, last);
+    xoff += owl_ttfwide(font, ch, last);
     xfract = xoff - (int)xoff;
     last = ch;
   }
   return bitmap;
 }
 
-static p8_Audio p8_openaudio(const SDL_AudioSpec *spec) {
-  p8_Audio audio = SDL_OpenAudioDevice(NULL, 0, spec, NULL, 0);
+static owl_Audio owl_openaudio(const SDL_AudioSpec *spec) {
+  owl_Audio audio = SDL_OpenAudioDevice(NULL, 0, spec, NULL, 0);
 
   if (audio)
     SDL_PauseAudioDevice(audio, 0);
@@ -189,8 +189,8 @@ static p8_Audio p8_openaudio(const SDL_AudioSpec *spec) {
   return audio;
 }
 
-static p8_Sound *p8_loadwav(const char *filename) {
-  p8_Sound *sound;
+static owl_Sound *owl_loadwav(const char *filename) {
+  owl_Sound *sound;
   SDL_AudioSpec spec;
   u8 *wav;
   u32 size;
@@ -198,14 +198,14 @@ static p8_Sound *p8_loadwav(const char *filename) {
   if (!SDL_LoadWAV(filename, &spec, &wav, &size))
     return NULL;
 
-  sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+  sound = (owl_Sound *)calloc(1, sizeof(owl_Sound));
 
   if (!sound) {
     SDL_FreeWAV(wav);
     return NULL;
   }
 
-  sound->type = P8_SOUND_WAV;
+  sound->type = OWL_SOUND_WAV;
   sound->spec = spec;
   sound->buffer = wav;
   sound->size = size;
@@ -213,8 +213,8 @@ static p8_Sound *p8_loadwav(const char *filename) {
   return sound;
 }
 
-static p8_Sound *p8_loadflac(const char *filename) {
-  p8_Sound *sound;
+static owl_Sound *owl_loadflac(const char *filename) {
+  owl_Sound *sound;
   u32 channels, sample_rate;
   u64 num_samples;
   s32 *samples;
@@ -225,14 +225,14 @@ static p8_Sound *p8_loadflac(const char *filename) {
   if (!samples)
     return NULL;
 
-  sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+  sound = (owl_Sound *)calloc(1, sizeof(owl_Sound));
 
   if (!sound) {
     drflac_free(samples, NULL);
     return NULL;
   }
 
-  sound->type = P8_SOUND_FLAC;
+  sound->type = OWL_SOUND_FLAC;
   sound->spec.freq = sample_rate;
   sound->spec.channels = channels;
   sound->spec.format = AUDIO_S32SYS;
@@ -243,8 +243,8 @@ static p8_Sound *p8_loadflac(const char *filename) {
   return sound;
 }
 
-static p8_Sound *p8_loadmp3(const char *filename) {
-  p8_Sound *sound;
+static owl_Sound *owl_loadmp3(const char *filename) {
+  owl_Sound *sound;
   drmp3_config mp3;
   u64 num_samples;
   s16 *samples;
@@ -254,14 +254,14 @@ static p8_Sound *p8_loadmp3(const char *filename) {
   if (!samples)
     return NULL;
 
-  sound = (p8_Sound *)calloc(1, sizeof(p8_Sound));
+  sound = (owl_Sound *)calloc(1, sizeof(owl_Sound));
 
   if (!sound) {
     drmp3_free(samples, NULL);
     return NULL;
   }
 
-  sound->type = P8_SOUND_MP3;
+  sound->type = OWL_SOUND_MP3;
   sound->spec.freq = mp3.sampleRate;
   sound->spec.channels = mp3.channels;
   sound->spec.format = AUDIO_S16SYS;
@@ -272,20 +272,20 @@ static p8_Sound *p8_loadmp3(const char *filename) {
   return sound;
 }
 
-static p8_Sound *p8_sound(const char *filename) {
-  p8_Sound *sound;
+static owl_Sound *owl_sound(const char *filename) {
+  owl_Sound *sound;
 
-  sound = p8_loadwav(filename);
-
-  if (sound)
-    return sound;
-
-  sound = p8_loadflac(filename);
+  sound = owl_loadwav(filename);
 
   if (sound)
     return sound;
 
-  sound = p8_loadmp3(filename);
+  sound = owl_loadflac(filename);
+
+  if (sound)
+    return sound;
+
+  sound = owl_loadmp3(filename);
 
   if (sound)
     return sound;
@@ -293,18 +293,18 @@ static p8_Sound *p8_sound(const char *filename) {
   return NULL;
 }
 
-static void p8_soundfree(p8_Sound *sound) {
-  p8_clearaudio(sound->audio);
-  p8_closeaudio(sound->audio);
+static void owl_soundfree(owl_Sound *sound) {
+  owl_clearaudio(sound->audio);
+  owl_closeaudio(sound->audio);
 
   switch (sound->type) {
-  case P8_SOUND_WAV:
+  case OWL_SOUND_WAV:
     SDL_FreeWAV(sound->buffer);
     break;
-  case P8_SOUND_FLAC:
+  case OWL_SOUND_FLAC:
     drflac_free(sound->buffer, NULL);
     break;
-  case P8_SOUND_MP3:
+  case OWL_SOUND_MP3:
     drmp3_free(sound->buffer, NULL);
     break;
   }
@@ -312,14 +312,14 @@ static void p8_soundfree(p8_Sound *sound) {
   free(sound);
 }
 
-u64 p8_ticks(void) {
+u64 owl_ticks(void) {
   u64 ticks = SDL_GetTicks64();
   return ticks > 0 ? ticks : 1;
 }
 
-void p8_sleep(u32 ms) { SDL_Delay(ms); }
+void owl_sleep(u32 ms) { SDL_Delay(ms); }
 
-bool p8_init(s32 width, s32 height, const char *title, s32 flags) {
+bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     goto error;
 
@@ -349,12 +349,12 @@ bool p8_init(s32 width, s32 height, const char *title, s32 flags) {
   if (!app->screen)
     goto error;
 
-  app->ttfs = p8_table();
+  app->ttfs = owl_table();
 
   if (!app->ttfs)
     goto error;
 
-  app->sounds = p8_table();
+  app->sounds = owl_table();
 
   if (!app->sounds)
     goto error;
@@ -370,19 +370,19 @@ bool p8_init(s32 width, s32 height, const char *title, s32 flags) {
   app->width = width;
   app->height = height;
   app->framecount = 0;
-  app->rate = P8_FPS_DEFAULT;
-  app->rateticks = 1000.0f / (f32)P8_FPS_DEFAULT;
-  app->baseticks = p8_ticks();
+  app->rate = OWL_FPS_DEFAULT;
+  app->rateticks = 1000.0f / (f32)OWL_FPS_DEFAULT;
+  app->baseticks = owl_ticks();
   app->lastticks = app->baseticks;
 
   return true;
 
 error:
-  p8_quit();
+  owl_quit();
   return false;
 }
 
-void p8_quit(void) {
+void owl_quit(void) {
   if (app->screen) {
     SDL_FreeSurface(app->screen);
     app->screen = NULL;
@@ -405,20 +405,20 @@ void p8_quit(void) {
   }
 
   if (app->ttfs) {
-    p8_freetable(app->ttfs, (p8_Dtor)p8_ttffree);
+    owl_freetable(app->ttfs, (owl_Dtor)owl_ttffree);
     app->ttfs = NULL;
   }
 
   if (app->sounds) {
-    p8_freetable(app->sounds, (p8_Dtor)p8_soundfree);
+    owl_freetable(app->sounds, (owl_Dtor)owl_soundfree);
     app->sounds = NULL;
   }
 
   SDL_Quit();
 }
 
-bool p8_setfps(u32 rate) {
-  if (rate < P8_FPS_LOWER_LIMIT || rate > P8_FPS_UPPER_LIMIT)
+bool owl_setfps(u32 rate) {
+  if (rate < OWL_FPS_LOWER_LIMIT || rate > OWL_FPS_UPPER_LIMIT)
     return false;
 
   app->framecount = 0;
@@ -428,16 +428,16 @@ bool p8_setfps(u32 rate) {
   return true;
 }
 
-u32 p8_getfps(void) { return app->rate; }
+u32 owl_getfps(void) { return app->rate; }
 
-u32 p8_wait(void) {
+u32 owl_wait(void) {
   u64 current_ticks;
   u64 target_ticks;
   u32 time_passed;
 
   app->framecount += 1;
 
-  current_ticks = p8_ticks();
+  current_ticks = owl_ticks();
   time_passed = (u32)(current_ticks - app->lastticks);
 
   app->lastticks = current_ticks;
@@ -445,28 +445,28 @@ u32 p8_wait(void) {
   target_ticks = app->baseticks + (u64)((f32)app->framecount * app->rateticks);
 
   if (current_ticks <= target_ticks)
-    p8_sleep((u32)(target_ticks - current_ticks));
+    owl_sleep((u32)(target_ticks - current_ticks));
   else {
     app->framecount = 0;
-    app->baseticks = p8_ticks();
+    app->baseticks = owl_ticks();
   }
 
   return time_passed;
 }
 
-s32 p8_msgbox(s32 type, const char *title, const char *message,
-              const p8_MsgBoxButton *buttons, s32 count) {
+s32 owl_msgbox(s32 type, const char *title, const char *message,
+               const owl_MsgBoxButton *buttons, s32 count) {
   SDL_MessageBoxData data = {0};
   s32 buttonid = -1;
 
   switch (type) {
-  case P8_MSGBOX_ERROR:
+  case OWL_MSGBOX_ERROR:
     data.flags = SDL_MESSAGEBOX_ERROR;
     break;
-  case P8_MSGBOX_WARNING:
+  case OWL_MSGBOX_WARNING:
     data.flags = SDL_MESSAGEBOX_WARNING;
     break;
-  case P8_MSGBOX_INFORMATION:
+  case OWL_MSGBOX_INFORMATION:
   default:
     data.flags = SDL_MESSAGEBOX_INFORMATION;
     break;
@@ -482,39 +482,39 @@ s32 p8_msgbox(s32 type, const char *title, const char *message,
   return buttonid;
 }
 
-P8_INLINE u8 p8_fixsdlbutton(u8 button) {
+OWL_INLINE u8 owl_fixsdlbutton(u8 button) {
   switch (button) {
   case SDL_BUTTON_RIGHT:
-    return P8_BUTTON_RIGHT;
+    return OWL_BUTTON_RIGHT;
   case SDL_BUTTON_MIDDLE:
-    return P8_BUTTON_MIDDLE;
+    return OWL_BUTTON_MIDDLE;
   }
   return button;
 }
 
-bool p8_event(p8_Event *event) {
+bool owl_event(owl_Event *event) {
   SDL_Event e;
 
-  memset(event, 0, sizeof(p8_Event));
+  memset(event, 0, sizeof(owl_Event));
 
   while (SDL_PollEvent(&e)) {
     switch (e.type) {
     case SDL_QUIT:
-      event->type = P8_EVENT_QUIT;
+      event->type = OWL_EVENT_QUIT;
       return true;
 
     case SDL_KEYDOWN:
-      event->type = P8_EVENT_KEYDOWN;
+      event->type = OWL_EVENT_KEYDOWN;
       event->key.code = e.key.keysym.scancode;
       return true;
 
     case SDL_KEYUP:
-      event->type = P8_EVENT_KEYUP;
+      event->type = OWL_EVENT_KEYUP;
       event->key.code = e.key.keysym.scancode;
       return true;
 
     case SDL_MOUSEMOTION:
-      event->type = P8_EVENT_MOUSEMOVE;
+      event->type = OWL_EVENT_MOUSEMOVE;
       event->mouse.x = e.motion.x;
       event->mouse.y = e.motion.y;
       event->mouse.xrel = e.motion.xrel;
@@ -522,21 +522,21 @@ bool p8_event(p8_Event *event) {
       return true;
 
     case SDL_MOUSEBUTTONDOWN:
-      event->type = P8_EVENT_MOUSEDOWN;
-      event->button.button = p8_fixsdlbutton(e.button.button);
+      event->type = OWL_EVENT_MOUSEDOWN;
+      event->button.button = owl_fixsdlbutton(e.button.button);
       event->button.x = e.button.x;
       event->button.y = e.button.y;
       return true;
 
     case SDL_MOUSEBUTTONUP:
-      event->type = P8_EVENT_MOUSEUP;
-      event->button.button = p8_fixsdlbutton(e.button.button);
+      event->type = OWL_EVENT_MOUSEUP;
+      event->button.button = owl_fixsdlbutton(e.button.button);
       event->button.x = e.button.x;
       event->button.y = e.button.y;
       return true;
 
     case SDL_MOUSEWHEEL:
-      event->type = P8_EVENT_MOUSEWHEEL;
+      event->type = OWL_EVENT_MOUSEWHEEL;
       event->wheel.x = e.wheel.preciseX;
       event->wheel.y = e.wheel.preciseY;
       return true;
@@ -544,14 +544,14 @@ bool p8_event(p8_Event *event) {
     case SDL_TEXTINPUT:
       strncpy(app->input_text, e.text.text, sizeof(app->input_text));
 
-      event->type = P8_EVENT_TEXTINPUT;
+      event->type = OWL_EVENT_TEXTINPUT;
       event->input.text = app->input_text;
       return true;
 
     case SDL_TEXTEDITING:
       strncpy(app->edit_text, e.edit.text, sizeof(app->edit_text));
 
-      event->type = P8_EVENT_TEXTEDITING;
+      event->type = OWL_EVENT_TEXTEDITING;
       event->edit.start = e.edit.start;
       event->edit.length = e.edit.length;
       event->edit.text = app->edit_text;
@@ -561,42 +561,42 @@ bool p8_event(p8_Event *event) {
   return false;
 }
 
-const u8 *p8_keyboard(void) { return SDL_GetKeyboardState(NULL); }
+const u8 *owl_keyboard(void) { return SDL_GetKeyboardState(NULL); }
 
-u32 p8_mouse(s32 *x, s32 *y) {
+u32 owl_mouse(s32 *x, s32 *y) {
   u32 state = SDL_GetMouseState(x, y);
-  u32 mask = ~(P8_BUTTON_RMASK | P8_BUTTON_MMASK) & state;
+  u32 mask = ~(OWL_BUTTON_RMASK | OWL_BUTTON_MMASK) & state;
 
   if (SDL_BUTTON_RMASK & state)
-    mask |= P8_BUTTON_RMASK;
+    mask |= OWL_BUTTON_RMASK;
 
   if (SDL_BUTTON_MMASK & state)
-    mask |= P8_BUTTON_MMASK;
+    mask |= OWL_BUTTON_MMASK;
 
   return mask;
 }
 
-void p8_textinput(bool onoff) {
+void owl_textinput(bool onoff) {
   if (onoff)
     SDL_StartTextInput();
   else
     SDL_StopTextInput();
 }
 
-bool p8_textinputactive(void) { return SDL_IsTextInputActive(); }
+bool owl_textinputactive(void) { return SDL_IsTextInputActive(); }
 
-bool p8_textinputshown(void) { return strlen(app->edit_text) > 0; }
+bool owl_textinputshown(void) { return strlen(app->edit_text) > 0; }
 
-void p8_textinputposition(s32 x, s32 y) {
+void owl_textinputposition(s32 x, s32 y) {
   SDL_Rect rect = {x, y, app->width - x, app->height - y};
   SDL_SetTextInputRect(&rect);
 }
 
-p8_Canvas *p8_screen(void) { return app->screen; }
+owl_Canvas *owl_screen(void) { return app->screen; }
 
-p8_Canvas *p8_canvas(s32 width, s32 height) {
-  p8_Canvas *canvas = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32,
-                                                     SDL_PIXELFORMAT_RGBA32);
+owl_Canvas *owl_canvas(s32 width, s32 height) {
+  owl_Canvas *canvas = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32,
+                                                      SDL_PIXELFORMAT_RGBA32);
   if (!canvas)
     return NULL;
 
@@ -604,19 +604,19 @@ p8_Canvas *p8_canvas(s32 width, s32 height) {
   return canvas;
 }
 
-static p8_Canvas *p8_surface(const u8 *data, s32 w, s32 h, u8 format) {
+static owl_Canvas *owl_surface(const u8 *data, s32 w, s32 h, u8 format) {
   s32 d = format * 8;
   s32 p = format * w;
-  s32 f = (format == P8_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
-                                    : SDL_PIXELFORMAT_RGBA32;
+  s32 f = (format == OWL_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
+                                     : SDL_PIXELFORMAT_RGBA32;
   if (!data)
     return NULL;
 
   return SDL_CreateRGBSurfaceWithFormatFrom((void *)data, w, h, d, p, f);
 }
 
-static p8_Canvas *p8_tocanvas(p8_Canvas *surface) {
-  p8_Canvas *canvas;
+static owl_Canvas *owl_tocanvas(owl_Canvas *surface) {
+  owl_Canvas *canvas;
 
   if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
     canvas = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
@@ -630,17 +630,17 @@ static p8_Canvas *p8_tocanvas(p8_Canvas *surface) {
   return surface;
 }
 
-p8_Canvas *p8_image(const u8 *data, s32 w, s32 h, u8 format) {
-  p8_Canvas *surface = p8_surface(data, w, h, format);
+owl_Canvas *owl_image(const u8 *data, s32 w, s32 h, u8 format) {
+  owl_Canvas *surface = owl_surface(data, w, h, format);
 
   if (!surface)
     return NULL;
 
-  return p8_tocanvas(surface);
+  return owl_tocanvas(surface);
 }
 
-p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey) {
-  p8_Canvas *surface = p8_surface(data, w, h, P8_FORMAT_RGB);
+owl_Canvas *owl_imagex(const u8 *data, s32 w, s32 h, owl_Pixel colorkey) {
+  owl_Canvas *surface = owl_surface(data, w, h, OWL_FORMAT_RGB);
   u32 key;
 
   if (!surface)
@@ -649,11 +649,11 @@ p8_Canvas *p8_imagex(const u8 *data, s32 w, s32 h, p8_Pixel colorkey) {
   key = SDL_MapRGB(surface->format, colorkey.r, colorkey.g, colorkey.b);
   SDL_SetColorKey(surface, SDL_TRUE, key);
 
-  return p8_tocanvas(surface);
+  return owl_tocanvas(surface);
 }
 
-p8_Canvas *p8_load(const char *filename) {
-  p8_Canvas *canvas;
+owl_Canvas *owl_load(const char *filename) {
+  owl_Canvas *canvas;
   s32 w, h, format;
   u8 *data;
 
@@ -665,14 +665,14 @@ p8_Canvas *p8_load(const char *filename) {
   if (!data)
     return NULL;
 
-  canvas = p8_image(data, w, h, format);
+  canvas = owl_image(data, w, h, format);
   stbi_image_free(data);
 
   return canvas;
 }
 
-p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
-  p8_Canvas *canvas;
+owl_Canvas *owl_loadex(const char *filename, owl_Pixel colorkey) {
+  owl_Canvas *canvas;
   s32 w, h, format;
   u8 *data;
 
@@ -684,19 +684,19 @@ p8_Canvas *p8_loadex(const char *filename, p8_Pixel colorkey) {
   if (!data)
     return NULL;
 
-  canvas = (format == STBI_rgb) ? p8_imagex(data, w, h, colorkey)
-                                : p8_image(data, w, h, format);
+  canvas = (format == STBI_rgb) ? owl_imagex(data, w, h, colorkey)
+                                : owl_image(data, w, h, format);
   stbi_image_free(data);
 
   return canvas;
 }
 
-void p8_destroy(p8_Canvas *canvas) {
+void owl_destroy(owl_Canvas *canvas) {
   if (canvas && canvas != app->screen)
     SDL_FreeSurface(canvas);
 }
 
-void p8_size(p8_Canvas *canvas, s32 *w, s32 *h) {
+void owl_size(owl_Canvas *canvas, s32 *w, s32 *h) {
   if (w)
     *w = canvas->w;
 
@@ -704,42 +704,42 @@ void p8_size(p8_Canvas *canvas, s32 *w, s32 *h) {
     *h = canvas->h;
 }
 
-void p8_blendmode(p8_Canvas *canvas, s32 mode) {
+void owl_blendmode(owl_Canvas *canvas, s32 mode) {
   switch (mode) {
-  case P8_BLEND_ALPHA:
+  case OWL_BLEND_ALPHA:
     SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_BLEND);
     break;
-  case P8_BLEND_NONE:
+  case OWL_BLEND_NONE:
   default:
     SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_NONE);
     break;
   }
 }
 
-P8_INLINE void p8_lock(p8_Canvas *canvas) {
+OWL_INLINE void owl_lock(owl_Canvas *canvas) {
   if (SDL_MUSTLOCK(canvas))
     SDL_LockSurface(canvas);
 }
 
-P8_INLINE void p8_unlock(p8_Canvas *canvas) {
+OWL_INLINE void owl_unlock(owl_Canvas *canvas) {
   if (SDL_MUSTLOCK(canvas))
     SDL_UnlockSurface(canvas);
 }
 
-P8_INLINE u32 p8_getcolor(p8_Canvas *canvas) {
+OWL_INLINE u32 owl_getcolor(owl_Canvas *canvas) {
   return (u32)(uword_t)canvas->userdata;
 }
 
-P8_INLINE u32 *p8_getpixel(p8_Canvas *canvas, s32 x, s32 y) {
+OWL_INLINE u32 *owl_getpixel(owl_Canvas *canvas, s32 x, s32 y) {
   return (u32 *)((u8 *)canvas->pixels + y * canvas->pitch +
                  x * canvas->format->BytesPerPixel);
 }
 
-P8_INLINE u8 p8_blend(u32 d, u32 s, u8 a) {
+OWL_INLINE u8 owl_blend(u32 d, u32 s, u8 a) {
   return (s + ((d - s) * a >> 8)) & 0xFF;
 }
 
-P8_INLINE bool p8_clipped(p8_Canvas *canvas, s32 x, s32 y) {
+OWL_INLINE bool owl_clipped(owl_Canvas *canvas, s32 x, s32 y) {
   SDL_Point point = {x, y};
   SDL_Rect clip;
 
@@ -747,17 +747,17 @@ P8_INLINE bool p8_clipped(p8_Canvas *canvas, s32 x, s32 y) {
   return !SDL_PointInRect(&point, &clip);
 }
 
-P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
+OWL_INLINE void owl_drawpixel(owl_Canvas *canvas, s32 x, s32 y, u32 color) {
   u8 r, g, b, a;
   u8 R, G, B, A;
   u8 dR, dG, dB, dA;
   SDL_BlendMode mode;
   u32 *pixel;
 
-  if (p8_clipped(canvas, x, y))
+  if (owl_clipped(canvas, x, y))
     return;
 
-  pixel = p8_getpixel(canvas, x, y);
+  pixel = owl_getpixel(canvas, x, y);
 
   if (!pixel)
     return;
@@ -781,16 +781,16 @@ P8_INLINE void p8_drawpixel(p8_Canvas *canvas, s32 x, s32 y, u32 color) {
 
   SDL_GetRGBA(*pixel, canvas->format, &R, &G, &B, &A);
 
-  dR = p8_blend(r, R, a);
-  dG = p8_blend(g, G, a);
-  dB = p8_blend(b, B, a);
-  dA = p8_blend(a, A, a);
+  dR = owl_blend(r, R, a);
+  dG = owl_blend(g, G, a);
+  dB = owl_blend(b, B, a);
+  dA = owl_blend(a, A, a);
 
   *pixel = SDL_MapRGBA(canvas->format, dR, dG, dB, dA);
 }
 
-P8_INLINE void p8_drawline(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
-                           u32 color) {
+OWL_INLINE void owl_drawline(owl_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
+                             u32 color) {
   s32 dx = abs(x2 - x1);
   s32 dy = abs(y2 - y1);
   s32 sx = x1 < x2 ? 1 : -1;
@@ -799,7 +799,7 @@ P8_INLINE void p8_drawline(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
   s32 e2;
 
   do {
-    p8_drawpixel(canvas, x1, y1, color);
+    owl_drawpixel(canvas, x1, y1, color);
 
     e2 = 2 * err;
 
@@ -815,74 +815,74 @@ P8_INLINE void p8_drawline(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,
   } while (x1 != x2 || y1 != y2);
 }
 
-void p8_color(p8_Canvas *canvas, p8_Pixel color) {
+void owl_color(owl_Canvas *canvas, owl_Pixel color) {
   u32 rgba = SDL_MapRGBA(canvas->format, color.r, color.g, color.b, color.a);
   canvas->userdata = (void *)(uword_t)rgba;
 }
 
-void p8_clear(p8_Canvas *canvas) {
-  p8_fill(canvas, 0, 0, canvas->w, canvas->h);
+void owl_clear(owl_Canvas *canvas) {
+  owl_fill(canvas, 0, 0, canvas->w, canvas->h);
 }
 
-void p8_fill(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
+void owl_fill(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
   SDL_Rect rect = {x, y, w, h};
-  SDL_FillRect(canvas, &rect, p8_getcolor(canvas));
+  SDL_FillRect(canvas, &rect, owl_getcolor(canvas));
 }
 
-void p8_pixel(p8_Canvas *canvas, s32 x, s32 y) {
-  p8_Point point = {x, y};
-  p8_pixels(canvas, &point, 1);
+void owl_pixel(owl_Canvas *canvas, s32 x, s32 y) {
+  owl_Point point = {x, y};
+  owl_pixels(canvas, &point, 1);
 }
 
-void p8_pixels(p8_Canvas *canvas, const p8_Point *points, s32 n) {
-  u32 color = p8_getcolor(canvas);
+void owl_pixels(owl_Canvas *canvas, const owl_Point *points, s32 n) {
+  u32 color = owl_getcolor(canvas);
 
-  p8_lock(canvas);
+  owl_lock(canvas);
   while (n-- > 0)
-    p8_drawpixel(canvas, points[n].x, points[n].y, color);
-  p8_unlock(canvas);
+    owl_drawpixel(canvas, points[n].x, points[n].y, color);
+  owl_unlock(canvas);
 }
 
-void p8_line(p8_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2) {
-  p8_Point line[2] = {{x1, y1}, {x2, y2}};
-  p8_lines(canvas, line, 2);
+void owl_line(owl_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2) {
+  owl_Point line[2] = {{x1, y1}, {x2, y2}};
+  owl_lines(canvas, line, 2);
 }
 
-void p8_lines(p8_Canvas *canvas, const p8_Point *points, s32 n) {
-  u32 color = p8_getcolor(canvas);
-  const p8_Point *p1 = NULL, *p2 = NULL;
+void owl_lines(owl_Canvas *canvas, const owl_Point *points, s32 n) {
+  u32 color = owl_getcolor(canvas);
+  const owl_Point *p1 = NULL, *p2 = NULL;
   s32 i = 0;
 
-  p8_lock(canvas);
+  owl_lock(canvas);
   while (i < n) {
     p2 = &points[i++];
 
     if (p1)
-      p8_drawline(canvas, p1->x, p1->y, p2->x, p2->y, color);
+      owl_drawline(canvas, p1->x, p1->y, p2->x, p2->y, color);
 
     p1 = p2;
   }
-  p8_unlock(canvas);
+  owl_unlock(canvas);
 }
 
-void p8_rect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
-  p8_Point points[] = {{x, y}, {x + w, y}, {x + w, y + h}, {x, y + h}, {x, y}};
-  p8_lines(canvas, points, 5);
+void owl_rect(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
+  owl_Point points[] = {{x, y}, {x + w, y}, {x + w, y + h}, {x, y + h}, {x, y}};
+  owl_lines(canvas, points, 5);
 }
 
-void p8_fillrect(p8_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
-  u32 color = p8_getcolor(canvas);
+void owl_fillrect(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
+  u32 color = owl_getcolor(canvas);
   s32 i;
 
-  p8_lock(canvas);
+  owl_lock(canvas);
   for (i = 0; i < h; ++i)
-    p8_drawline(canvas, x, y + i, x + w, y + i, color);
-  p8_unlock(canvas);
+    owl_drawline(canvas, x, y + i, x + w, y + i, color);
+  owl_unlock(canvas);
 }
 
-void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
+void owl_ellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   s32 dx, dy, d1, d2, rx2, ry2, offsetx, offsety;
-  u32 color = p8_getcolor(canvas);
+  u32 color = owl_getcolor(canvas);
 
   offsetx = 0;
   offsety = ry;
@@ -894,15 +894,15 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   dx = 2 * ry2 * offsetx;
   dy = 2 * rx2 * offsety;
 
-  p8_lock(canvas);
+  owl_lock(canvas);
 
   while (dx < dy) {
-    p8_drawpixel(canvas, x + offsetx, y + offsety, color);
-    p8_drawpixel(canvas, x - offsetx, y - offsety, color);
+    owl_drawpixel(canvas, x + offsetx, y + offsety, color);
+    owl_drawpixel(canvas, x - offsetx, y - offsety, color);
 
     if (x + offsetx != x - offsetx) {
-      p8_drawpixel(canvas, x - offsetx, y + offsety, color);
-      p8_drawpixel(canvas, x + offsetx, y - offsety, color);
+      owl_drawpixel(canvas, x - offsetx, y + offsety, color);
+      owl_drawpixel(canvas, x + offsetx, y - offsety, color);
     }
 
     if (d1 < 0) {
@@ -922,12 +922,12 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
        (rx2 * ((offsety - 1) * (offsety - 1))) - (rx2 * ry2);
 
   while (offsety >= 0) {
-    p8_drawpixel(canvas, x + offsetx, y + offsety, color);
-    p8_drawpixel(canvas, x - offsetx, y - offsety, color);
+    owl_drawpixel(canvas, x + offsetx, y + offsety, color);
+    owl_drawpixel(canvas, x - offsetx, y - offsety, color);
 
     if (y + offsety != y - offsety) {
-      p8_drawpixel(canvas, x - offsetx, y + offsety, color);
-      p8_drawpixel(canvas, x + offsetx, y - offsety, color);
+      owl_drawpixel(canvas, x - offsetx, y + offsety, color);
+      owl_drawpixel(canvas, x + offsetx, y - offsety, color);
     }
 
     if (d2 > 0) {
@@ -943,12 +943,12 @@ void p8_ellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
     }
   }
 
-  p8_unlock(canvas);
+  owl_unlock(canvas);
 }
 
-void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
+void owl_fillellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   s32 dx, dy, d1, d2, rx2, ry2, offx, offy;
-  u32 color = p8_getcolor(canvas);
+  u32 color = owl_getcolor(canvas);
 
   offx = 0;
   offy = ry;
@@ -960,7 +960,7 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   dx = 2 * ry2 * offx;
   dy = 2 * rx2 * offy;
 
-  p8_lock(canvas);
+  owl_lock(canvas);
 
   while (dx < dy) {
     if (d1 < 0) {
@@ -968,8 +968,8 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
       dx += ry2 << 1;
       d1 += dx + ry2;
     } else {
-      p8_drawline(canvas, x - offx, y + offy, x + offx, y + offy, color);
-      p8_drawline(canvas, x - offx, y - offy, x + offx, y - offy, color);
+      owl_drawline(canvas, x - offx, y + offy, x + offx, y + offy, color);
+      owl_drawline(canvas, x - offx, y - offy, x + offx, y - offy, color);
 
       offx++;
       offy--;
@@ -983,8 +983,8 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
        (rx2 * ((offy - 1) * (offy - 1))) - (rx2 * ry2);
 
   while (offy > 0) {
-    p8_drawline(canvas, x - offx, y + offy, x + offx, y + offy, color);
-    p8_drawline(canvas, x - offx, y - offy, x + offx, y - offy, color);
+    owl_drawline(canvas, x - offx, y + offy, x + offx, y + offy, color);
+    owl_drawline(canvas, x - offx, y - offy, x + offx, y - offy, color);
 
     if (d2 > 0) {
       offy--;
@@ -999,20 +999,20 @@ void p8_fillellipse(p8_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
     }
   }
 
-  p8_drawline(canvas, x - rx, y, x + rx, y, color);
-  p8_unlock(canvas);
+  owl_drawline(canvas, x - rx, y, x + rx, y, color);
+  owl_unlock(canvas);
 }
 
-void p8_clip(p8_Canvas *canvas, const p8_Rect *rect) {
+void owl_clip(owl_Canvas *canvas, const owl_Rect *rect) {
   SDL_SetClipRect(canvas, (const SDL_Rect *)rect);
 }
 
-void p8_blit(p8_Canvas *canvas, p8_Canvas *src, const p8_Rect *srcrect,
-             const p8_Rect *dstrect) {
+void owl_blit(owl_Canvas *canvas, owl_Canvas *src, const owl_Rect *srcrect,
+              const owl_Rect *dstrect) {
   SDL_BlitScaled(src, (SDL_Rect *)srcrect, canvas, (SDL_Rect *)dstrect);
 }
 
-void p8_present(void) {
+void owl_present(void) {
   SDL_UnlockTexture(app->texture);
 
   SDL_RenderClear(app->renderer);
@@ -1023,8 +1023,8 @@ void p8_present(void) {
                   &app->screen->pitch);
 }
 
-bool p8_loadfont(const char *name, const char *filename) {
-  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
+bool owl_loadfont(const char *name, const char *filename) {
+  owl_TrueType *ttf = (owl_TrueType *)owl_gettable(app->ttfs, name);
 
   if (ttf)
     return true;
@@ -1032,17 +1032,17 @@ bool p8_loadfont(const char *name, const char *filename) {
   if (!filename)
     return false;
 
-  ttf = p8_loadttf(filename);
+  ttf = owl_loadttf(filename);
 
   if (!ttf)
     return false;
 
-  p8_settable(app->ttfs, name, ttf);
+  owl_settable(app->ttfs, name, ttf);
   return true;
 }
 
-bool p8_font(const char *name, s32 size) {
-  p8_TrueType *ttf = (p8_TrueType *)p8_gettable(app->ttfs, name);
+bool owl_font(const char *name, s32 size) {
+  owl_TrueType *ttf = (owl_TrueType *)owl_gettable(app->ttfs, name);
   s32 ascent, descent, linegap;
 
   if (!ttf)
@@ -1061,9 +1061,10 @@ bool p8_font(const char *name, s32 size) {
   return true;
 }
 
-s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y, p8_Pixel color) {
-  p8_Font *font = &app->font;
-  p8_Rect rect = {x, y, -1, -1};
+s32 owl_text(owl_Canvas *canvas, const char *text, s32 x, s32 y,
+             owl_Pixel color) {
+  owl_Font *font = &app->font;
+  owl_Rect rect = {x, y, -1, -1};
   f32 alpha = (f32)color.a / 0xFF;
   u8 *bitmap;
   s32 i, j;
@@ -1071,34 +1072,34 @@ s32 p8_text(p8_Canvas *canvas, const char *text, s32 x, s32 y, p8_Pixel color) {
   if (!text)
     return -1;
 
-  bitmap = p8_ttfbitmap(font, text, &rect.w, &rect.h);
+  bitmap = owl_ttfbitmap(font, text, &rect.w, &rect.h);
 
   if (!bitmap)
     return -1;
 
-  p8_lock(canvas);
+  owl_lock(canvas);
   for (j = 0; j < rect.h; ++j)
     for (i = 0; i < rect.w; ++i) {
       u32 pixel = SDL_MapRGBA(canvas->format, color.r, color.g, color.b,
                               (u8)ceilf(alpha * bitmap[j * rect.w + i]));
-      p8_drawpixel(canvas, x + i, y + j, pixel);
+      owl_drawpixel(canvas, x + i, y + j, pixel);
     }
-  p8_unlock(canvas);
+  owl_unlock(canvas);
   free(bitmap);
 
   return rect.w;
 }
 
-s32 p8_textwidth(const char *text) {
-  p8_Font *font = &app->font;
+s32 owl_textwidth(const char *text) {
+  owl_Font *font = &app->font;
 
   if (!text)
     return -1;
 
-  return (s32)p8_ttfwidth(font, text);
+  return (s32)owl_ttfwidth(font, text);
 }
 
-p8_Audio p8_audio(s32 freq, u8 format, u8 channels, u16 samples) {
+owl_Audio owl_audio(s32 freq, u8 format, u8 channels, u16 samples) {
   SDL_AudioSpec spec = {0};
 
   spec.freq = freq;
@@ -1106,68 +1107,68 @@ p8_Audio p8_audio(s32 freq, u8 format, u8 channels, u16 samples) {
   spec.samples = samples;
 
   switch (format) {
-  case P8_AUDIO_U8:
+  case OWL_AUDIO_U8:
     spec.format = AUDIO_U8;
     break;
-  case P8_AUDIO_S8:
+  case OWL_AUDIO_S8:
     spec.format = AUDIO_S8;
     break;
-  case P8_AUDIO_U16:
+  case OWL_AUDIO_U16:
     spec.format = AUDIO_U16SYS;
     break;
-  case P8_AUDIO_S16:
+  case OWL_AUDIO_S16:
     spec.format = AUDIO_S16SYS;
     break;
-  case P8_AUDIO_S32:
+  case OWL_AUDIO_S32:
     spec.format = AUDIO_S32SYS;
     break;
-  case P8_AUDIO_F32:
+  case OWL_AUDIO_F32:
     spec.format = AUDIO_F32SYS;
     break;
   default:
     return 0;
   }
 
-  return p8_openaudio(&spec);
+  return owl_openaudio(&spec);
 }
 
-void p8_closeaudio(p8_Audio audio) {
+void owl_closeaudio(owl_Audio audio) {
   if (!audio)
     return;
 
   SDL_CloseAudioDevice(audio);
 }
 
-void p8_clearaudio(p8_Audio audio) {
+void owl_clearaudio(owl_Audio audio) {
   if (!audio)
     return;
 
   SDL_ClearQueuedAudio(audio);
 }
 
-void p8_playaudio(p8_Audio audio, bool onoff) {
+void owl_playaudio(owl_Audio audio, bool onoff) {
   if (!audio)
     return;
 
   SDL_PauseAudioDevice(audio, !onoff);
 }
 
-bool p8_audiostream(p8_Audio audio, const void *buffer, s32 len) {
+bool owl_audiostream(owl_Audio audio, const void *buffer, s32 len) {
   if (!audio)
     return false;
 
   return 0 == SDL_QueueAudio(audio, buffer, len);
 }
 
-u32 p8_audiobuffered(p8_Audio audio) {
+u32 owl_audiobuffered(owl_Audio audio) {
   if (!audio)
     return 0;
 
   return SDL_GetQueuedAudioSize(audio);
 }
 
-bool p8_loadsound(const char *name, const char *filename) {
-  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+bool owl_loadsound(const char *name, const char *filename) {
+  owl_Sound *sound = (owl_Sound *)owl_gettable(app->sounds, name);
 
   if (sound)
     return true;
@@ -1175,62 +1176,62 @@ bool p8_loadsound(const char *name, const char *filename) {
   if (!filename)
     return false;
 
-  sound = p8_sound(filename);
+  sound = owl_sound(filename);
 
   if (!sound)
     return false;
 
-  p8_settable(app->sounds, name, sound);
+  owl_settable(app->sounds, name, sound);
   return true;
 }
 
-bool p8_playing(const char *name) {
-  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+bool owl_playing(const char *name) {
+  owl_Sound *sound = (owl_Sound *)owl_gettable(app->sounds, name);
 
   if (!sound)
     return false;
 
-  return p8_audiobuffered(sound->audio) > 0;
+  return owl_audiobuffered(sound->audio) > 0;
 }
 
-bool p8_play(const char *name) {
-  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+bool owl_play(const char *name) {
+  owl_Sound *sound = (owl_Sound *)owl_gettable(app->sounds, name);
 
   if (!sound)
     return false;
 
   if (!sound->audio)
-    sound->audio = p8_openaudio(&sound->spec);
+    sound->audio = owl_openaudio(&sound->spec);
 
-  return p8_audiostream(sound->audio, sound->buffer, sound->size);
+  return owl_audiostream(sound->audio, sound->buffer, sound->size);
 }
 
-bool p8_stop(const char *name) {
-  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+bool owl_stop(const char *name) {
+  owl_Sound *sound = (owl_Sound *)owl_gettable(app->sounds, name);
 
   if (!sound)
     return false;
 
-  p8_clearaudio(sound->audio);
+  owl_clearaudio(sound->audio);
   return true;
 }
 
-bool p8_pause(const char *name) {
-  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+bool owl_pause(const char *name) {
+  owl_Sound *sound = (owl_Sound *)owl_gettable(app->sounds, name);
 
   if (!sound)
     return false;
 
-  p8_playaudio(sound->audio, false);
+  owl_playaudio(sound->audio, false);
   return true;
 }
 
-bool p8_resume(const char *name) {
-  p8_Sound *sound = (p8_Sound *)p8_gettable(app->sounds, name);
+bool owl_resume(const char *name) {
+  owl_Sound *sound = (owl_Sound *)owl_gettable(app->sounds, name);
 
   if (!sound)
     return false;
 
-  p8_playaudio(sound->audio, true);
+  owl_playaudio(sound->audio, true);
   return true;
 }

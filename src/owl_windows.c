@@ -1,23 +1,23 @@
 /*
- * p8_windows.c
+ * owl_windows.c
  *
  * Copyright (c) 2022 Xiongfei Shi. All rights reserved.
  *
  * Author: Xiongfei Shi <xiongfei.shi(a)icloud.com>
  *
- * This file is part of P8.
- * Usage of P8 is subject to the appropriate license agreement.
+ * This file is part of Owl.
+ * Usage of Owl is subject to the appropriate license agreement.
  */
 
 #ifdef _WIN32
 #include <Windows.h>
 #endif
 
-#include "p8.h"
+#include "owl.h"
 
 #ifdef _WIN32
 /* @copy /b src.exe+your.data dst.exe */
-u32 p8_pesize(s64 *filesize) {
+u32 owl_pesize(s64 *filesize) {
   LARGE_INTEGER liFileSize = {0};
   DWORD dwPESize = 0;
   DWORD dwRead, dwMaxPointer = 0;
@@ -27,8 +27,8 @@ u32 p8_pesize(s64 *filesize) {
   BYTE pBuff[4096] = {0};
   WORD i;
 
-  HANDLE hFile = CreateFileA(p8_selfname(), GENERIC_READ, FILE_SHARE_READ, NULL,
-                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE hFile = CreateFileA(owl_selfname(), GENERIC_READ, FILE_SHARE_READ,
+                             NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
   if (INVALID_HANDLE_VALUE == hFile)
     return 0;

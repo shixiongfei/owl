@@ -1,12 +1,12 @@
 /*
- * p8_dylib.c
+ * owl_dylib.c
  *
  * Copyright (c) 2022 Xiongfei Shi. All rights reserved.
  *
  * Author: Xiongfei Shi <xiongfei.shi(a)icloud.com>
  *
- * This file is part of P8.
- * Usage of P8 is subject to the appropriate license agreement.
+ * This file is part of Owl.
+ * Usage of Owl is subject to the appropriate license agreement.
  */
 
 #ifndef _WIN32
@@ -17,20 +17,20 @@
 #include <Windows.h>
 #endif
 
-#include "p8.h"
+#include "owl.h"
 
-p8_Dylib p8_dylib(const char *sofile) {
+owl_Dylib owl_dylib(const char *sofile) {
 #ifndef _WIN32
-  p8_Dylib dylib = dlopen(sofile, RTLD_NOW);
+  owl_Dylib dylib = dlopen(sofile, RTLD_NOW);
   if (dylib)
     dlclose(dylib);
   return dylib;
 #else
-  return (p8_Dylib)GetModuleHandleA(sofile);
+  return (owl_Dylib)GetModuleHandleA(sofile);
 #endif
 }
 
-void *p8_dysym(p8_Dylib dylib, const char *name) {
+void *owl_dysym(owl_Dylib dylib, const char *name) {
 #ifndef _WIN32
   void *symbol = dlsym(dylib, name);
 
