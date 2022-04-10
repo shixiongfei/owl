@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "SDL_main.h"
 #include "p8.h"
 
 #ifndef _WIN32
@@ -185,7 +186,7 @@ static s32 run(void) {
   return 0;
 }
 
-int p8_main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   run();
   return 0;
 }

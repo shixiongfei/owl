@@ -1234,6 +1234,3 @@ bool p8_resume(const char *name) {
   p8_playaudio(sound->audio, true);
   return true;
 }
-
-extern int p8_main(int argc, char *argv[]);
-int main(int argc, char *argv[]) { return p8_main(argc, argv); }

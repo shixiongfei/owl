@@ -4,11 +4,11 @@
 --
 -- Author: Xiongfei Shi <xiongfei.shi(a)icloud.com>
 --
--- This file is part of P8.
--- Usage of P8 is subject to the appropriate license agreement.
+-- This file is part of Owl.
+-- Usage of Owl is subject to the appropriate license agreement.
 --
 
-workspace ( "p8" )
+workspace ( "owl" )
   configurations { "Release", "Debug" }
   platforms { "x64" }
 
@@ -16,34 +16,32 @@ workspace ( "p8" )
     os.rmdir(".vs")
     os.rmdir("bin")
     os.rmdir("objs")
-    os.remove("p8.VC.db")
-    os.remove("p8.sln")
-    os.remove("p8.vcxproj")
-    os.remove("p8.vcxproj.filters")
-    os.remove("p8.vcxproj.user")
-    os.remove("p8.make")
+    os.remove("owl.VC.db")
+    os.remove("owl.sln")
+    os.remove("owl.vcxproj")
+    os.remove("owl.vcxproj.filters")
+    os.remove("owl.vcxproj.user")
+    os.remove("owl.make")
     os.remove("Makefile")
     return
   end
 
   -- A project defines one build target
-  project ( "p8" )
-    kind ( "WindowedApp" )
+  project ( "owlcore" )
+    kind ( "SharedLib" )
     language ( "C" )
-    files { "./src/**.h", "./src/**.c", "./3rd/*.h",
-            "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c",
-            "./3rd/wren/src/**.h", "./3rd/wren/src/**.c" }
-    includedirs { "./3rd",
+    files { "./src/**.h", "./src/**.c",
+            "./include/**.h", "./3rd/*.h",
+            "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c" }
+    includedirs { "./include", "./3rd",
                   "./3rd/sdl2/include",
-                  "./3rd/utf8",
-                  "./3rd/wren/src/include",
-                  "./3rd/wren/src/vm",
-                  "./3rd/wren/src/optional" }
+                  "./3rd/utf8" }
     libdirs { "./libs" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
-    links { "SDL2", "SDL2main" }
-    defines { "_UNICODE" }
+    targetname ( "OwlCore" )
+    links { "SDL2" }
+    defines { "_UNICODE", "OWL_BUILD" }
     staticruntime "On"
 
     filter ( "configurations:Release" )
@@ -84,6 +82,47 @@ workspace ( "p8" )
       postbuildcommands {
         "{COPY} ./libs/libSDL2.dylib %{cfg.targetdir}",
       }
+
+    filter { "action:gmake", "system:linux" }
+      defines { "__linux__" }
+      linkoptions { "-Wl,-rpath=." }
+
+    filter { "action:gmake", "system:bsd" }
+      defines { "__BSD__" }
+
+
+  -- A project defines one build target
+  project ( "owl" )
+    kind ( "WindowedApp" )
+    language ( "C" )
+    files { "./app/**.h", "./app/**.c" }
+    includedirs { "./include", "./3rd/sdl2/include" }
+    libdirs { "./libs", "./bin" }
+    objdir ( "./objs" )
+    targetdir ( "./bin" )
+    links { "SDL2main", "OwlCore" }
+    defines { "_UNICODE" }
+    staticruntime "On"
+
+    filter ( "configurations:Release" )
+      optimize "On"
+      defines { "NDEBUG", "_NDEBUG" }
+
+    filter ( "configurations:Debug" )
+      symbols "On"
+      defines { "DEBUG", "_DEBUG" }
+
+    filter ( "action:vs*" )
+      defines { "WIN32", "_WIN32", "_WINDOWS",
+                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
+                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+
+    filter ( "action:gmake" )
+      warnings  "Default" --"Extra"
+      links { "m", "iconv" }
+
+    filter { "action:gmake", "system:macosx" }
+      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
 
     filter { "action:gmake", "system:linux" }
       defines { "__linux__" }
