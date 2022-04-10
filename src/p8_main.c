@@ -14,8 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "wren.h"
-
 #include "p8.h"
 
 #ifndef _WIN32
@@ -31,49 +29,6 @@
 #endif
 
 #define pathdup(path) p8_pathformat(strdup(path))
-
-#define MAX_SEARCHES 16
-#define MAX_METHODS_PER_CLASS 14
-#define MAX_CLASSES_PER_MODULE 6
-
-typedef struct ScriptModules {
-  s32 size;
-  char *searches[MAX_SEARCHES];
-} ScriptModules;
-
-typedef struct MethodRegistry {
-  bool isstatic;
-  const char *signature;
-  WrenForeignMethodFn method;
-} MethodRegistry;
-
-typedef struct ClassRegistry {
-  const char *name;
-  MethodRegistry methods[MAX_METHODS_PER_CLASS];
-} ClassRegistry;
-
-typedef struct ModuleRegistry {
-  const char *name;
-  const char **source;
-  ClassRegistry classes[MAX_CLASSES_PER_MODULE];
-} ModuleRegistry;
-
-#define SENTINEL_METHOD { false, NULL, NULL }
-#define SENTINEL_CLASS { NULL, { SENTINEL_METHOD } }
-#define SENTINEL_MODULE {NULL, NULL, { SENTINEL_CLASS } }
-
-#define MODULE(name) { #name, &name##ModuleSource, {
-#define END_MODULE SENTINEL_CLASS } },
-
-#define CLASS(name) { #name, {
-#define END_CLASS SENTINEL_METHOD } },
-
-#define METHOD(signature, fn) { false, signature, fn },
-#define STATIC_METHOD(signature, fn) { true, signature, fn },
-#define ALLOCATE(fn) { true, "<allocate>", (WrenForeignMethodFn)fn },
-#define FINALIZE(fn) { true, "<finalize>", (WrenForeignMethodFn)fn },
-
-static ModuleRegistry modules[] = {SENTINEL_MODULE};
 
 static void message_box(s32 type, const char *title, const char *format, ...) {
   p8_MsgBoxButton mbtn = {P8_MSGBOX_RETURNKEY | P8_MSGBOX_ESCKEY, 0, "OK"};
@@ -101,177 +56,6 @@ static s32 show_version(void) {
               "P8 v%s\nBuild: %s %s\n\nBy: %s", P8_RELEASE, __DATE__, __TIME__,
               P8_AUTHOR);
   return 0;
-}
-
-static bool add_module(ScriptModules *modules, const char *module) {
-  if (modules->size >= MAX_SEARCHES)
-    return false;
-
-  if (!p8_isexist(module))
-    return false;
-
-  if (!p8_isdir(module))
-    return false;
-
-  modules->searches[modules->size++] = pathdup(module);
-  return true;
-}
-
-static bool init_modules(ScriptModules *modules, const char *root) {
-  char module[MAX_PATH] = {0};
-
-  if (!add_module(modules, root))
-    return false;
-
-  snprintf(module, sizeof(module), "%s/wren_modules", root);
-  add_module(modules, p8_pathformat(module));
-
-  /* TODO: Builtin Runtime Scripts */
-  add_module(modules, "scripts");
-
-  return true;
-}
-
-static void free_modules(ScriptModules *modules) {
-  while (modules->size > 0) {
-    free(modules->searches[--modules->size]);
-    modules->searches[modules->size] = NULL;
-  }
-}
-
-static void wren_onwrite(WrenVM *vm, const char *text) {
-  if (0 == strcmp(text, "\n"))
-    return;
-  message_box(P8_MSGBOX_INFORMATION, "Message", "%s", text);
-}
-
-static void wren_onerror(WrenVM *vm, WrenErrorType type, const char *module,
-                         const int line, const char *msg) {
-  switch (type) {
-  case WREN_ERROR_COMPILE:
-    error_box("Compile Error: [%s line %d] [Error] %s", module, line, msg);
-    break;
-  case WREN_ERROR_STACK_TRACE:
-    error_box("Stack Trace: [%s line %d] in %s", module, line, msg);
-    break;
-  case WREN_ERROR_RUNTIME:
-    error_box("Runtime Error: [Runtime Error] %s", msg);
-    break;
-  }
-}
-
-static char *load_source(WrenVM *vm, const char **module, const char *file) {
-  ScriptModules *modules = (ScriptModules *)wrenGetUserData(vm);
-  char path[MAX_PATH] = {0};
-  u8 *source;
-  s32 i;
-
-  for (i = 0; i < modules->size; ++i) {
-    snprintf(path, sizeof(path), "%s/%s.wren", modules->searches[i], file);
-
-    if (!p8_isexist(path))
-      continue;
-
-    if (!p8_isfile(path))
-      return NULL;
-
-    source = p8_readfile(path);
-
-    if (!source)
-      return NULL;
-
-    if (module)
-      *module = modules->searches[i];
-
-    return (char *)source;
-  }
-  return NULL;
-}
-
-static void load_completed(WrenVM *vm, const char *name,
-                           struct WrenLoadModuleResult result) {
-  if (result.source)
-    free((void *)result.source);
-}
-
-static WrenLoadModuleResult load_module(WrenVM *vm, const char *module) {
-  WrenLoadModuleResult result = {0};
-
-  result.onComplete = load_completed;
-  result.source = load_source(vm, NULL, module);
-
-  return result;
-}
-
-static const char *resolve_module(WrenVM *vm, const char *importer,
-                                  const char *module) {
-  char path[MAX_PATH] = {0};
-  char *resolve;
-
-  if (p8_pathtype(module) == P8_PATHTYPE_SIMPLE)
-    return module;
-
-  p8_dirname(path, importer);
-  strcat(path, "/");
-  strcat(path, module);
-  p8_pathformat(path);
-
-  resolve = (char *)malloc(strlen(path) + 1);
-
-  if (!resolve)
-    return NULL;
-
-  return p8_resolvepath(resolve, path);
-}
-
-static WrenForeignMethodFn bind_foreignmethod(WrenVM *vm, const char *module,
-                                              const char *classname,
-                                              bool isstatic,
-                                              const char *signature) {
-  return NULL;
-}
-
-static WrenForeignClassMethods bind_foreignclass(WrenVM *vm, const char *module,
-                                                 const char *classname) {
-  WrenForeignClassMethods methods = {NULL, NULL};
-
-  return methods;
-}
-
-static WrenVM *init_vm(ScriptModules *modules) {
-  WrenConfiguration config;
-
-  wrenInitConfiguration(&config);
-
-  config.bindForeignMethodFn = bind_foreignmethod;
-  config.bindForeignClassFn = bind_foreignclass;
-  config.resolveModuleFn = resolve_module;
-  config.loadModuleFn = load_module;
-  config.writeFn = &wren_onwrite;
-  config.errorFn = &wren_onerror;
-  config.userData = modules;
-
-  return wrenNewVM(&config);
-}
-
-P8_INLINE void free_vm(WrenVM *vm) { wrenFreeVM(vm); }
-
-static bool vm_dofile(WrenVM *vm, const char *file) {
-  WrenInterpretResult result;
-  const char *module;
-  char *source;
-
-  source = load_source(vm, &module, file);
-
-  if (!source) {
-    error_box("Could not find file \"%s.wren\".\n", file);
-    return false;
-  }
-
-  result = wrenInterpret(vm, module, source);
-  free(source);
-
-  return result == WREN_RESULT_SUCCESS;
 }
 
 static s32 run(void) {
@@ -402,28 +186,6 @@ static s32 run(void) {
 }
 
 int p8_main(int argc, char *argv[]) {
-  ScriptModules modules = {0};
-  WrenVM *vm;
-
-  if (argc <= 1)
-    return show_version();
-
-  if (!init_modules(&modules, argv[1])) {
-    error_box("Could not find module \"%s\".\n", argv[1]);
-    return -1;
-  }
-
-  vm = init_vm(&modules);
-
-  if (!vm)
-    return -1;
-
-  if (vm_dofile(vm, "main")) {
-    run();
-  }
-
-  free_vm(vm);
-  free_modules(&modules);
-
+  run();
   return 0;
 }
