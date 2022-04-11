@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
   const char *text = "中英文abc混合ABC测试!";
   const s32 SCREEN_W = 800;
   const s32 SCREEN_H = 600;
+  const u8 *kbd;
 
   if (!owl_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
     return -1;
@@ -87,6 +88,14 @@ int main(int argc, char *argv[]) {
         break;
       }
     }
+
+    kbd = owl_keystate();
+
+    if (kbd[OWL_KEY_APPLICATION])
+      owl_pixel(screen, 50, 20);
+
+    if (kbd[OWL_KEY_RIGHTBUTTON])
+      owl_pixel(screen, 55, 20);
 
     owl_color(screen, owl_rgb(0xff, 0, 0));
     owl_pixel(screen, 10, 10);
