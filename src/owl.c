@@ -15,15 +15,22 @@
 #include "owl_font.h"
 #include "owl_framerate.h"
 #include "owl_sound.h"
-#include "owl_window.h"
 
-typedef struct owl_App {
-  owl_Window *window;
+#define OWL_WINDOW_FLAGS SDL_WINDOW_ALLOW_HIGHDPI
+#define OWL_HW_RENDERER SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE
+#define OWL_SW_RENDERER SDL_RENDERER_SOFTWARE | SDL_RENDERER_TARGETTEXTURE
+
+typedef struct owl_Window {
+  SDL_Window *window;
+  SDL_Renderer *renderer;
+  SDL_Texture *texture;
+  SDL_Surface *surface;
   owl_FrameRate fps;
-} owl_App;
+  s32 width, height;
+} owl_Window;
 
-static owl_App owl_app = {0};
-static owl_App *app = &owl_app;
+static owl_Window owl_app = {0};
+static owl_Window *app = &owl_app;
 
 const char *owl_version(s32 *major, s32 *minor, s32 *patch) {
   static char owlver[] = {OWL_RELEASE};
@@ -48,6 +55,8 @@ u64 owl_ticks(void) {
 void owl_sleep(u32 ms) { SDL_Delay(ms); }
 
 bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
+  s32 x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
+
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     goto error;
 
@@ -57,10 +66,36 @@ bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
   SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, "1");
 
-  app->window = owl_window(width, height, title, flags);
+  app->window = SDL_CreateWindow(title, x, y, width, height, OWL_WINDOW_FLAGS);
 
   if (!app->window)
     goto error;
+
+  app->renderer = SDL_CreateRenderer(app->window, -1, OWL_HW_RENDERER);
+
+  if (!app->renderer)
+    app->renderer = SDL_CreateRenderer(app->window, -1, OWL_SW_RENDERER);
+
+  if (!app->renderer)
+    goto error;
+
+  app->texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
+                                   SDL_TEXTUREACCESS_STREAMING, width, height);
+  if (!app->texture)
+    goto error;
+
+  app->surface = SDL_CreateRGBSurfaceWithFormatFrom(NULL, width, height, 32, 0,
+                                                    SDL_PIXELFORMAT_RGBA32);
+  if (!app->surface)
+    goto error;
+
+  SDL_LockTexture(app->texture, NULL, &app->surface->pixels,
+                  &app->surface->pitch);
+  SDL_SetSurfaceRLE(app->surface, SDL_TRUE);
+  SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 0);
+
+  app->width = width;
+  app->height = height;
 
   if (!owl_fontinit())
     goto error;
@@ -77,13 +112,30 @@ error:
 }
 
 void owl_quit(void) {
+  owl_soundquit();
+  owl_fontquit();
+
+  if (app->surface) {
+    SDL_FreeSurface(app->surface);
+    app->surface = NULL;
+  }
+
+  if (app->texture) {
+    SDL_UnlockTexture(app->texture);
+    SDL_DestroyTexture(app->texture);
+    app->texture = NULL;
+  }
+
+  if (app->renderer) {
+    SDL_DestroyRenderer(app->renderer);
+    app->renderer = NULL;
+  }
+
   if (app->window) {
-    owl_freewindow(app->window);
+    SDL_DestroyWindow(app->window);
     app->window = NULL;
   }
 
-  owl_soundquit();
-  owl_fontquit();
   SDL_Quit();
 }
 
@@ -93,38 +145,15 @@ u32 owl_getfps(void) { return app->fps.rate; }
 
 u32 owl_wait(void) { return owl_framerate_wait(&app->fps); }
 
-bool owl_event(owl_Event *event) { return owl_windowevent(app->window, event); }
+owl_Canvas *owl_screen(void) { return app->surface; }
 
-const u8 *owl_keyboard(void) { return SDL_GetKeyboardState(NULL); }
+void owl_present(void) {
+  SDL_UnlockTexture(app->texture);
 
-u32 owl_mouse(s32 *x, s32 *y) {
-  u32 state = SDL_GetMouseState(x, y);
-  u32 mask = ~(OWL_BUTTON_RMASK | OWL_BUTTON_MMASK) & state;
+  SDL_RenderClear(app->renderer);
+  SDL_RenderCopy(app->renderer, app->texture, NULL, NULL);
+  SDL_RenderPresent(app->renderer);
 
-  if (SDL_BUTTON_RMASK & state)
-    mask |= OWL_BUTTON_RMASK;
-
-  if (SDL_BUTTON_MMASK & state)
-    mask |= OWL_BUTTON_MMASK;
-
-  return mask;
+  SDL_LockTexture(app->texture, NULL, &app->surface->pixels,
+                  &app->surface->pitch);
 }
-
-void owl_textinput(bool onoff) {
-  if (onoff)
-    SDL_StartTextInput();
-  else
-    SDL_StopTextInput();
-}
-
-bool owl_textinputactive(void) { return SDL_IsTextInputActive(); }
-
-bool owl_textinputshown(void) { return owl_windowtextinputshown(app->window); }
-
-void owl_textinputposition(s32 x, s32 y) {
-  owl_windowtextinputposition(app->window, x, y);
-}
-
-owl_Canvas *owl_screen(void) { return owl_windowcanvas(app->window); }
-
-void owl_present(void) { owl_windowpresent(app->window); }

@@ -18,8 +18,8 @@
 extern "C" {
 #endif
 
-extern void owl_lock(owl_Canvas *canvas);
-extern void owl_unlock(owl_Canvas *canvas);
+extern void owl_lockcanvas(owl_Canvas *canvas);
+extern void owl_unlockcanvas(owl_Canvas *canvas);
 
 extern void owl_drawpixel(owl_Canvas *canvas, s32 x, s32 y, u32 color);
 extern void owl_drawline(owl_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2,

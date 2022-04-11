@@ -28,18 +28,16 @@ static owl_Canvas *owl_surface(const u8 *data, s32 w, s32 h, u8 format) {
 }
 
 static owl_Canvas *owl_tocanvas(owl_Canvas *surface) {
-  owl_Canvas *canvas;
+  owl_Canvas *canvas = surface;
 
   if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
     canvas = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
     SDL_FreeSurface(surface);
-
-    SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_BLEND);
-    return canvas;
   }
 
-  SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND);
-  return surface;
+  SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_BLEND);
+  SDL_SetSurfaceRLE(canvas, SDL_TRUE);
+  return canvas;
 }
 
 OWL_INLINE u32 owl_getcolor(owl_Canvas *canvas) {
@@ -63,12 +61,12 @@ OWL_INLINE bool owl_clipped(owl_Canvas *canvas, s32 x, s32 y) {
   return !SDL_PointInRect(&point, &clip);
 }
 
-void owl_lock(owl_Canvas *canvas) {
+void owl_lockcanvas(owl_Canvas *canvas) {
   if (SDL_MUSTLOCK(canvas))
     SDL_LockSurface(canvas);
 }
 
-void owl_unlock(owl_Canvas *canvas) {
+void owl_unlockcanvas(owl_Canvas *canvas) {
   if (SDL_MUSTLOCK(canvas))
     SDL_UnlockSurface(canvas);
 }
@@ -148,6 +146,7 @@ owl_Canvas *owl_canvas(s32 width, s32 height) {
     return NULL;
 
   SDL_SetSurfaceBlendMode(canvas, SDL_BLENDMODE_BLEND);
+  SDL_SetSurfaceRLE(canvas, SDL_TRUE);
   return canvas;
 }
 
@@ -212,7 +211,7 @@ owl_Canvas *owl_loadex(const char *filename, owl_Pixel colorkey) {
   return canvas;
 }
 
-void owl_destroy(owl_Canvas *canvas) {
+void owl_freecanvas(owl_Canvas *canvas) {
   if (canvas)
     SDL_FreeSurface(canvas);
 }
@@ -245,10 +244,10 @@ void owl_pixel(owl_Canvas *canvas, s32 x, s32 y) {
 void owl_pixels(owl_Canvas *canvas, const owl_Point *points, s32 n) {
   u32 color = owl_getcolor(canvas);
 
-  owl_lock(canvas);
+  owl_lockcanvas(canvas);
   while (n-- > 0)
     owl_drawpixel(canvas, points[n].x, points[n].y, color);
-  owl_unlock(canvas);
+  owl_unlockcanvas(canvas);
 }
 
 void owl_color(owl_Canvas *canvas, owl_Pixel color) {
@@ -275,7 +274,7 @@ void owl_lines(owl_Canvas *canvas, const owl_Point *points, s32 n) {
   const owl_Point *p1 = NULL, *p2 = NULL;
   s32 i = 0;
 
-  owl_lock(canvas);
+  owl_lockcanvas(canvas);
   while (i < n) {
     p2 = &points[i++];
 
@@ -284,7 +283,7 @@ void owl_lines(owl_Canvas *canvas, const owl_Point *points, s32 n) {
 
     p1 = p2;
   }
-  owl_unlock(canvas);
+  owl_unlockcanvas(canvas);
 }
 
 void owl_rect(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
@@ -296,10 +295,10 @@ void owl_fillrect(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h) {
   u32 color = owl_getcolor(canvas);
   s32 i;
 
-  owl_lock(canvas);
+  owl_lockcanvas(canvas);
   for (i = 0; i < h; ++i)
     owl_drawline(canvas, x, y + i, x + w, y + i, color);
-  owl_unlock(canvas);
+  owl_unlockcanvas(canvas);
 }
 
 void owl_ellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
@@ -316,7 +315,7 @@ void owl_ellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   dx = 2 * ry2 * offsetx;
   dy = 2 * rx2 * offsety;
 
-  owl_lock(canvas);
+  owl_lockcanvas(canvas);
 
   while (dx < dy) {
     owl_drawpixel(canvas, x + offsetx, y + offsety, color);
@@ -365,7 +364,7 @@ void owl_ellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
     }
   }
 
-  owl_unlock(canvas);
+  owl_unlockcanvas(canvas);
 }
 
 void owl_fillellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
@@ -382,7 +381,7 @@ void owl_fillellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   dx = 2 * ry2 * offx;
   dy = 2 * rx2 * offy;
 
-  owl_lock(canvas);
+  owl_lockcanvas(canvas);
 
   while (dx < dy) {
     if (d1 < 0) {
@@ -422,7 +421,7 @@ void owl_fillellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry) {
   }
 
   owl_drawline(canvas, x - rx, y, x + rx, y, color);
-  owl_unlock(canvas);
+  owl_unlockcanvas(canvas);
 }
 
 void owl_clip(owl_Canvas *canvas, const owl_Rect *rect) {

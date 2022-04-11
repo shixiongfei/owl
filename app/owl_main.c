@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
     owl_wait();
   }
 
-  owl_destroy(hero);
+  owl_freecanvas(hero);
 
   owl_quit();
   return 0;

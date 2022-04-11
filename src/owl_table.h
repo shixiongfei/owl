@@ -19,6 +19,7 @@ extern "C" {
 #endif
 
 typedef struct owl_Table owl_Table;
+typedef void (*owl_Dtor)(void *);
 
 extern owl_Table *owl_table(void);
 extern void owl_freetable(owl_Table *table, owl_Dtor dtor);

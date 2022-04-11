@@ -150,7 +150,6 @@ typedef struct owl_Rect {
 
 typedef u32 owl_Audio;
 typedef struct SDL_Surface owl_Canvas;
-typedef void (*owl_Dtor)(void *);
 
 typedef struct owl_Event {
   u32 type;
@@ -474,7 +473,7 @@ OWL_API owl_Canvas *owl_imagex(const u8 *data, s32 w, s32 h,
                                owl_Pixel colorkey);
 OWL_API owl_Canvas *owl_load(const char *filename);
 OWL_API owl_Canvas *owl_loadex(const char *filename, owl_Pixel colorkey);
-OWL_API void owl_destroy(owl_Canvas *canvas);
+OWL_API void owl_freecanvas(owl_Canvas *canvas);
 
 OWL_API void owl_size(owl_Canvas *canvas, s32 *w, s32 *h);
 OWL_API void owl_blendmode(owl_Canvas *canvas, s32 mode);

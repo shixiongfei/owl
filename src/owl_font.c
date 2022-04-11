@@ -201,14 +201,14 @@ s32 owl_text(owl_Canvas *canvas, const char *text, s32 x, s32 y,
   if (!bitmap)
     return -1;
 
-  owl_lock(canvas);
+  owl_lockcanvas(canvas);
   for (j = 0; j < rect.h; ++j)
     for (i = 0; i < rect.w; ++i) {
       u32 pixel = SDL_MapRGBA(canvas->format, color.r, color.g, color.b,
                               (u8)ceilf(alpha * bitmap[j * rect.w + i]));
       owl_drawpixel(canvas, x + i, y + j, pixel);
     }
-  owl_unlock(canvas);
+  owl_unlockcanvas(canvas);
   free(bitmap);
 
   return rect.w;
