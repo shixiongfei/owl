@@ -76,10 +76,6 @@
 #define OWL_BSD 1
 #endif
 
-#define OWL_PATHTYPE_ABSOLUTE 0
-#define OWL_PATHTYPE_RELATIVE 1
-#define OWL_PATHTYPE_SIMPLE 2
-
 #define OWL_FORMAT_RGB 3
 #define OWL_FORMAT_RGBA 4
 
@@ -103,14 +99,6 @@
 #define OWL_EVENT_MOUSEWHEEL (OWL_EVENT_BASE + 6)
 #define OWL_EVENT_TEXTINPUT (OWL_EVENT_BASE + 7)
 #define OWL_EVENT_TEXTEDITING (OWL_EVENT_BASE + 8)
-
-#define OWL_MSGBOX_ERROR 0
-#define OWL_MSGBOX_WARNING 1
-#define OWL_MSGBOX_INFORMATION 2
-
-#define OWL_MSGBOX_NOKEY 0
-#define OWL_MSGBOX_RETURNKEY 1
-#define OWL_MSGBOX_ESCKEY 2
 
 #define OWL_BUTTON(X) (1 << ((X)-1))
 #define OWL_BUTTON_LEFT 1
@@ -160,23 +148,9 @@ typedef struct owl_Rect {
   s32 w, h;
 } owl_Rect;
 
-typedef struct owl_Matrix {
-  f32 a, c, tx;
-  f32 b, d, ty;
-  /*  0, 0, 1 */
-} owl_Matrix;
-
 typedef u32 owl_Audio;
 typedef struct SDL_Surface owl_Canvas;
-typedef struct owl_Table owl_Table;
 typedef void (*owl_Dtor)(void *);
-typedef void *owl_Dylib;
-
-typedef struct owl_MsgBoxButton {
-  u32 flags;
-  int buttonid;
-  const char *text;
-} owl_MsgBoxButton;
 
 typedef struct owl_Event {
   u32 type;
@@ -472,6 +446,8 @@ OWL_INLINE owl_Pixel owl_rgba(u8 r, u8 g, u8 b, u8 a) {
   return p;
 }
 
+OWL_API const char *owl_version(s32 *major, s32 *minor, s32 *patch);
+
 OWL_API u64 owl_ticks(void);
 OWL_API void owl_sleep(u32 ms);
 
@@ -481,9 +457,6 @@ OWL_API void owl_quit(void);
 OWL_API bool owl_setfps(u32 rate);
 OWL_API u32 owl_getfps(void);
 OWL_API u32 owl_wait(void);
-
-OWL_API s32 owl_msgbox(s32 type, const char *title, const char *message,
-                       const owl_MsgBoxButton *buttons, s32 count);
 
 OWL_API bool owl_event(owl_Event *event);
 OWL_API const u8 *owl_keyboard(void);
@@ -527,15 +500,6 @@ OWL_API void owl_blit(owl_Canvas *canvas, owl_Canvas *src,
                       const owl_Rect *srcrect, const owl_Rect *dstrect);
 OWL_API void owl_present(void);
 
-OWL_API owl_Table *owl_table(void);
-OWL_API void owl_freetable(owl_Table *table, owl_Dtor dtor);
-OWL_API void owl_cleartable(owl_Table *table, owl_Dtor dtor);
-OWL_API s32 owl_tablesize(owl_Table *table);
-OWL_API void *owl_settable(owl_Table *table, const char *name, void *value);
-OWL_API void *owl_gettable(owl_Table *table, const char *name);
-OWL_API void *owl_isettable(owl_Table *table, u64 key, void *value);
-OWL_API void *owl_igettable(owl_Table *table, u64 key);
-
 OWL_API bool owl_loadfont(const char *name, const char *filename);
 OWL_API bool owl_font(const char *name, s32 size);
 OWL_API s32 owl_text(owl_Canvas *canvas, const char *text, s32 x, s32 y,
@@ -555,33 +519,6 @@ OWL_API bool owl_play(const char *name);
 OWL_API bool owl_stop(const char *name);
 OWL_API bool owl_pause(const char *name);
 OWL_API bool owl_resume(const char *name);
-
-OWL_API s64 owl_filesize(const char *filename);
-OWL_API u8 *owl_readfile(const char *filename);
-OWL_API int owl_tempfile(const char *filename);
-
-OWL_API const char *owl_selfname(void);
-OWL_API char *owl_pathformat(char *path);
-OWL_API char *owl_dirname(char *outbuf, const char *path);
-OWL_API char *owl_basename(char *outbuf, const char *path);
-
-OWL_API s32 owl_pathtype(const char *path);
-OWL_API char *owl_resolvepath(char *outbuf, const char *path);
-
-OWL_API void owl_setcwd(const char *workdir);
-OWL_API char *owl_getcwd(char *workdir, s32 size);
-
-OWL_API bool owl_isexist(const char *path);
-OWL_API bool owl_isdir(const char *path);
-OWL_API bool owl_isfile(const char *path);
-OWL_API bool owl_islink(const char *path);
-
-OWL_API owl_Dylib owl_dylib(const char *sofile);
-OWL_API void *owl_dysym(owl_Dylib dylib, const char *name);
-
-#if OWL_WINDOWS
-OWL_API u32 owl_pesize(s64 *filesize);
-#endif
 
 #ifdef __cplusplus
 };

@@ -17,7 +17,7 @@
 #include <Windows.h>
 #endif
 
-#include "owl.h"
+#include "owl_dylib.h"
 
 owl_Dylib owl_dylib(const char *sofile) {
 #ifndef _WIN32

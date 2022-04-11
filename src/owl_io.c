@@ -48,7 +48,7 @@
 #define OWL_PATHSEP '\\'
 #endif /* _WIN32 */
 
-#include "owl.h"
+#include "owl_io.h"
 
 #ifndef MAX_PATH
 #if defined(MAXPATHLEN)

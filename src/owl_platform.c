@@ -1,5 +1,5 @@
 /*
- * owl_windows.c
+ * owl_platform.c
  *
  * Copyright (c) 2022 Xiongfei Shi. All rights reserved.
  *
@@ -9,13 +9,13 @@
  * Usage of Owl is subject to the appropriate license agreement.
  */
 
-#ifdef _WIN32
+#include "owl_platform.h"
+
+#if OWL_WINDOWS
 #include <Windows.h>
-#endif
 
-#include "owl.h"
+#include "owl_io.h"
 
-#ifdef _WIN32
 /* @copy /b src.exe+your.data dst.exe */
 u32 owl_pesize(s64 *filesize) {
   LARGE_INTEGER liFileSize = {0};

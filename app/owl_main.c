@@ -17,49 +17,7 @@
 #include "SDL_main.h"
 #include "owl.h"
 
-#ifndef _WIN32
-#define dynarray(type, name, size) type name[size]
-#else
-#include <malloc.h>
-#define dynarray(type, name, size)                                             \
-  type *name = (type *)_alloca((size) * sizeof(type))
-#endif
-
-#ifndef MAX_PATH
-#define MAX_PATH 260
-#endif
-
-#define pathdup(path) owl_pathformat(strdup(path))
-
-static void message_box(s32 type, const char *title, const char *format, ...) {
-  owl_MsgBoxButton mbtn = {OWL_MSGBOX_RETURNKEY | OWL_MSGBOX_ESCKEY, 0, "OK"};
-  va_list args, ap;
-  s32 nbytes;
-
-  va_start(args, format);
-  va_copy(ap, args);
-
-  nbytes = vsnprintf(NULL, 0, format, ap);
-
-  if (nbytes > 0) {
-    dynarray(char, message, nbytes + 1);
-    vsnprintf(message, nbytes + 1, format, args);
-    owl_msgbox(type, title, message, &mbtn, 1);
-  }
-  va_end(args);
-}
-
-#define error_box(format, ...)                                                 \
-  message_box(owl_MSGBOX_ERROR, "Error!", format, ##__VA_ARGS__)
-
-static s32 show_version(void) {
-  message_box(OWL_MSGBOX_INFORMATION, "owl Game Engine",
-              "Owl v%s\nBuild: %s %s\n\nBy: %s", OWL_RELEASE, __DATE__, __TIME__,
-              OWL_AUTHOR);
-  return 0;
-}
-
-static s32 run(void) {
+int main(int argc, char *argv[]) {
   bool quit = false;
   owl_Event event;
   owl_Canvas *screen, *hero, *morph;
@@ -183,10 +141,5 @@ static s32 run(void) {
   owl_destroy(hero);
 
   owl_quit();
-  return 0;
-}
-
-int main(int argc, char *argv[]) {
-  run();
   return 0;
 }

@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-#include "owl.h"
+#include "owl_table.h"
 
 #define OWL_TRIE_BITS 4
 #define OWL_TRIE_FACTOR (1 << OWL_TRIE_BITS)

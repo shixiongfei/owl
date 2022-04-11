@@ -9,4 +9,4 @@
  * Usage of Owl is subject to the appropriate license agreement.
  */
 
-#include "owl.h"
+#include "owl_matrix.h"
