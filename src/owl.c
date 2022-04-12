@@ -124,31 +124,31 @@ bool owl_matrix_invert(owl_Matrix *m) {
 void owl_matrix_translate(owl_Matrix *m, f32 x, f32 y) {
   owl_Matrix mat;
   owl_matrix_settranslate(&mat, x, y);
-  owl_matrix_multiply(m, &mat, m);
+  owl_matrix_multiply(m, m, &mat);
 }
 
 void owl_matrix_scale(owl_Matrix *m, f32 x, f32 y) {
   owl_Matrix mat;
   owl_matrix_setscale(&mat, x, y);
-  owl_matrix_multiply(m, &mat, m);
+  owl_matrix_multiply(m, m, &mat);
 }
 
 void owl_matrix_shear(owl_Matrix *m, f32 x, f32 y) {
   owl_Matrix mat;
   owl_matrix_setshear(&mat, x, y);
-  owl_matrix_multiply(m, &mat, m);
+  owl_matrix_multiply(m, m, &mat);
 }
 
 void owl_matrix_rotate(owl_Matrix *m, f32 rad) {
   owl_Matrix mat;
   owl_matrix_setrotate(&mat, rad);
-  owl_matrix_multiply(m, &mat, m);
+  owl_matrix_multiply(m, m, &mat);
 }
 
 void owl_matrix_transrotate(owl_Matrix *m, f32 x, f32 y, f32 rad) {
   owl_Matrix mat;
   owl_matrix_settransrotate(&mat, x, y, rad);
-  owl_matrix_multiply(m, &mat, m);
+  owl_matrix_multiply(m, m, &mat);
 }
 
 void owl_matrix_apply(owl_Matrix *m, owl_Vector2 *v, f32 x, f32 y) {
