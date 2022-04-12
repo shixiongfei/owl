@@ -182,7 +182,7 @@ typedef enum {
   OWL_KEY_X2BUTTON = 5,
 
   OWL_KEY_BACKSPACE = 8,
-  OWL_KEY_TAB = 9,  
+  OWL_KEY_TAB = 9,
   OWL_KEY_RETURN = 13,
   OWL_KEY_ESCAPE = 27,
   OWL_KEY_SPACE = 32,
@@ -289,7 +289,7 @@ typedef enum {
   OWL_KEY_KP_7 = 227,
   OWL_KEY_KP_8 = 228,
   OWL_KEY_KP_9 = 229,
-  
+
   OWL_KEY_KP_PERIOD = 230,
   OWL_KEY_KP_DIVIDE = 231,
   OWL_KEY_KP_MULTIPLY = 232,
