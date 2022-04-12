@@ -100,6 +100,10 @@
 #define OWL_EVENT_TEXTINPUT (OWL_EVENT_BASE + 7)
 #define OWL_EVENT_TEXTEDITING (OWL_EVENT_BASE + 8)
 
+#define OWL_PI 3.14159265358979323846f
+#define OWL_DEG (180.0f / OWL_PI)
+#define OWL_RAD (OWL_PI / 180.0f)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -135,6 +139,16 @@ typedef struct owl_Rect {
   s32 x, y;
   s32 w, h;
 } owl_Rect;
+
+typedef struct owl_Vector2 {
+  f32 x, y;
+} owl_Vector2;
+
+typedef struct owl_Matrix {
+  f32 a, c, tx;
+  f32 b, d, ty;
+  /*  0, 0, 1 */
+} owl_Matrix;
 
 typedef u32 owl_Audio;
 typedef struct SDL_Surface owl_Canvas;
@@ -301,15 +315,30 @@ typedef enum {
   OWL_KEY_MAX = 256
 } owl_Keycode;
 
-OWL_INLINE owl_Pixel owl_rgb(u8 r, u8 g, u8 b) {
-  owl_Pixel p = {r, g, b, 0xFF};
-  return p;
-}
+OWL_API owl_Pixel owl_rgb(u8 r, u8 g, u8 b);
+OWL_API owl_Pixel owl_rgba(u8 r, u8 g, u8 b, u8 a);
 
-OWL_INLINE owl_Pixel owl_rgba(u8 r, u8 g, u8 b, u8 a) {
-  owl_Pixel p = {r, g, b, a};
-  return p;
-}
+OWL_API f32 owl_degrees(f32 rad);
+OWL_API f32 owl_radians(f32 deg);
+
+OWL_API void owl_matrix(owl_Matrix *m, f32 a, f32 b, f32 c, f32 d, f32 tx,
+                        f32 ty);
+OWL_API void owl_matrix_setidentity(owl_Matrix *m);
+OWL_API void owl_matrix_settranslate(owl_Matrix *m, f32 x, f32 y);
+OWL_API void owl_matrix_setscale(owl_Matrix *m, f32 x, f32 y);
+OWL_API void owl_matrix_setshear(owl_Matrix *m, f32 x, f32 y);
+OWL_API void owl_matrix_setrotate(owl_Matrix *m, f32 rad);
+OWL_API void owl_matrix_settransrotate(owl_Matrix *m, f32 x, f32 y, f32 rad);
+
+OWL_API void owl_matrix_multiply(owl_Matrix *m, owl_Matrix *l, owl_Matrix *r);
+OWL_API bool owl_matrix_invert(owl_Matrix *m);
+
+OWL_API void owl_matrix_translate(owl_Matrix *m, f32 x, f32 y);
+OWL_API void owl_matrix_scale(owl_Matrix *m, f32 x, f32 y);
+OWL_API void owl_matrix_shear(owl_Matrix *m, f32 x, f32 y);
+OWL_API void owl_matrix_rotate(owl_Matrix *m, f32 rad);
+OWL_API void owl_matrix_transrotate(owl_Matrix *m, f32 x, f32 y, f32 rad);
+OWL_API void owl_matrix_apply(owl_Matrix *m, owl_Vector2 *out, f32 x, f32 y);
 
 OWL_API const char *owl_version(s32 *major, s32 *minor, s32 *patch);
 

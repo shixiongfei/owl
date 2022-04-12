@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "SDL_main.h"
 #include "owl.h"
@@ -32,6 +33,10 @@ int main(int argc, char *argv[]) {
   const s32 SCREEN_W = 800;
   const s32 SCREEN_H = 600;
   const u8 *kbd;
+  owl_Matrix m;
+  owl_Vector2 c = {80, 80}, v = {130, 80};
+
+  owl_matrix_settransrotate(&m, c.x, c.y, owl_radians(1.0f));
 
   if (!owl_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
     return -1;
@@ -96,6 +101,9 @@ int main(int argc, char *argv[]) {
 
     if (kbd[OWL_KEY_RIGHTBUTTON])
       owl_pixel(screen, 55, 20);
+
+    owl_matrix_apply(&m, &v, v.x, v.y);
+    owl_line(screen, (s32)c.x, (s32)c.y, (s32)ceilf(v.x), (s32)ceilf(v.y));
 
     owl_color(screen, owl_rgb(0xff, 0, 0));
     owl_pixel(screen, 10, 10);
