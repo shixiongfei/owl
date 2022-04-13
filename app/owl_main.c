@@ -9,11 +9,11 @@
  * Usage of Owl is subject to the appropriate license agreement.
  */
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "SDL_main.h"
 #include "owl.h"

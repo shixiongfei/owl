@@ -35,16 +35,6 @@ typedef struct owl_Window {
 static owl_Window owl_app = {0};
 static owl_Window *app = &owl_app;
 
-owl_Pixel owl_rgb(u8 r, u8 g, u8 b) {
-  owl_Pixel p = {r, g, b, 0xFF};
-  return p;
-}
-
-owl_Pixel owl_rgba(u8 r, u8 g, u8 b, u8 a) {
-  owl_Pixel p = {r, g, b, a};
-  return p;
-}
-
 f32 owl_degrees(f32 rad) { return rad * OWL_DEG; }
 
 f32 owl_radians(f32 deg) { return deg * OWL_RAD; }

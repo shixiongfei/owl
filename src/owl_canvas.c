@@ -16,6 +16,16 @@
 
 #include "owl_canvas.h"
 
+owl_Pixel owl_rgb(u8 r, u8 g, u8 b) {
+  owl_Pixel p = {r, g, b, 0xFF};
+  return p;
+}
+
+owl_Pixel owl_rgba(u8 r, u8 g, u8 b, u8 a) {
+  owl_Pixel p = {r, g, b, a};
+  return p;
+}
+
 static owl_Canvas *owl_surface(const u8 *data, s32 w, s32 h, u8 format) {
   s32 d = format * 8;
   s32 p = format * w;
