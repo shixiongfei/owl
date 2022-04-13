@@ -1,5 +1,5 @@
 /*
- * owl_input.h
+ * owl_math.h
  *
  * Copyright (c) 2022 Xiongfei Shi. All rights reserved.
  *
@@ -9,8 +9,8 @@
  * Usage of Owl is subject to the appropriate license agreement.
  */
 
-#ifndef __OWL_INPUT_H__
-#define __OWL_INPUT_H__
+#ifndef __OWL_MATH_H__
+#define __OWL_MATH_H__
 
 #include "owl.h"
 
@@ -22,4 +22,4 @@ extern "C" {
 };
 #endif
 
-#endif /* __OWL_INPUT_H__ */
+#endif /* __OWL_MATH_H__ */
