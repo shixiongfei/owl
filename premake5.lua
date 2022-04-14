@@ -10,7 +10,12 @@
 
 workspace ( "owl" )
   configurations { "Release", "Debug" }
-  platforms { "x64" }
+
+  if os.istarget("macosx") or os.istarget("ios") then
+    platforms { "universal" }
+  else
+    platforms { "x64" }
+  end
 
   if _ACTION == "clean" then
     os.rmdir(".vs")
