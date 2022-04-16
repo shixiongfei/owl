@@ -35,7 +35,7 @@ workspace ( "owl" )
   project ( "owlcore" )
     kind ( "SharedLib" )
     language ( "C" )
-    files { "./src/**.h", "./src/**.c",
+    files { "./core/**.h", "./core/**.c",
             "./include/**.h", "./3rd/*.h",
             "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c" }
     includedirs { "./include", "./3rd",
@@ -100,7 +100,7 @@ workspace ( "owl" )
   project ( "owl" )
     kind ( "WindowedApp" )
     language ( "C" )
-    files { "./app/**.h", "./app/**.c" }
+    files { "./src/**.h", "./src/**.c" }
     includedirs { "./include", "./3rd/sdl2/include" }
     libdirs { "./libs", "./bin" }
     objdir ( "./objs" )
