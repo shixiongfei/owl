@@ -17,9 +17,11 @@
 
 #include "SDL_main.h"
 #include "owl.h"
+#include "owlvm.h"
 
 int main(int argc, char *argv[]) {
   bool quit = false;
+  char title[128];
   owl_Event event;
   owl_Canvas *screen, *hero, *morph;
   owl_Point points[4] = {{13, 13}, {13, 15}, {15, 13}, {15, 15}};
@@ -38,7 +40,10 @@ int main(int argc, char *argv[]) {
 
   owl_matrix_settransrotate(&m, c.x, c.y, owl_radians(1.0f));
 
-  if (!owl_init(SCREEN_W, SCREEN_H, "Think Pixels", 0))
+  sprintf(title, "Think Pixels | Owl Core: %s VM: %s",
+          owl_version(NULL, NULL, NULL), owlvm_version(NULL, NULL, NULL));
+
+  if (!owl_init(SCREEN_W, SCREEN_H, title, 0))
     return -1;
 
   screen = owl_screen();
