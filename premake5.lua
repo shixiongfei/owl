@@ -45,7 +45,8 @@ workspace ( "owl" )
     language ( "C" )
     files { "./core/**.h", "./core/**.c",
             "./include/owl.h", "./3rd/*.h",
-            "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c" }
+            "./3rd/utf8/utf8.h", "./3rd/utf8/utf8.c",
+            "./3rd/miniz/*.h", "./3rd/miniz/*.c" }
     includedirs { "./include", "./3rd",
                   "./3rd/sdl2/include",
                   "./3rd/utf8" }
