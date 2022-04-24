@@ -23,6 +23,9 @@ workspace ( "owl" )
     os.rmdir("objs")
     os.remove("owl.VC.db")
     os.remove("owl.sln")
+    os.remove("SDL2main.vcxproj")
+    os.remove("SDL2main.vcxproj.filters")
+    os.remove("SDL2main.vcxproj.user")
     os.remove("owlcore.vcxproj")
     os.remove("owlcore.vcxproj.filters")
     os.remove("owlcore.vcxproj.user")
@@ -32,12 +35,57 @@ workspace ( "owl" )
     os.remove("owl.vcxproj")
     os.remove("owl.vcxproj.filters")
     os.remove("owl.vcxproj.user")
+    os.remove("SDL2main.make")
     os.remove("owlcore.make")
     os.remove("owlvm.make")
     os.remove("owl.make")
     os.remove("Makefile")
     return
   end
+
+  -- A project defines one build target
+  project ( "SDL2main" )
+    kind ( "StaticLib" )
+    language ( "C" )
+    files { "./3rd/sdl2/include/SDL_main.h" }
+    includedirs { "./3rd/sdl2/include" }
+    objdir ( "./objs" )
+    targetdir ( "./bin" )
+    defines { "_UNICODE" }
+    staticruntime "On"
+
+    filter ( "configurations:Release" )
+      optimize "On"
+      defines { "NDEBUG", "_NDEBUG" }
+
+    filter ( "configurations:Debug" )
+      symbols "On"
+      defines { "DEBUG", "_DEBUG" }
+
+    filter ( "action:vs*" )
+      defines { "WIN32", "_WIN32", "_WINDOWS",
+                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
+                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      files { "./3rd/sdl2/src/main/windows/*.c" }
+
+    filter ( "action:gmake" )
+      warnings  "Default" --"Extra"
+
+    filter { "action:gmake", "system:macosx" }
+      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
+      files { "./3rd/sdl2/src/main/dummy/*.c" }
+
+    filter { "action:xcode4", "system:ios" }
+      defines { "__APPLE__", "__IOS__" }
+      files { "./3rd/sdl2/src/main/uikit/*.c" }
+
+    filter { "action:gmake", "system:linux" }
+      defines { "__linux__" }
+      files { "./3rd/sdl2/src/main/dummy/*.c" }
+
+    filter { "action:gmake", "system:bsd" }
+      defines { "__BSD__" }
+      files { "./3rd/sdl2/src/main/dummy/*.c" }
 
   -- A project defines one build target
   project ( "owlcore" )
