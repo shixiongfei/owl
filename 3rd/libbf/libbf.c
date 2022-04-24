@@ -35,6 +35,10 @@
 #include "cutils.h"
 #include "libbf.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4018 4146 4244)
+#endif
+
 /* enable it to check the multiplication result */
 //#define USE_MUL_CHECK
 /* enable it to use FFT/NTT multiplication */

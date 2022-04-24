@@ -29,6 +29,10 @@
 
 #include "cutils.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4267)
+#endif
+
 void pstrcpy(char *buf, int buf_size, const char *str)
 {
     int c;
