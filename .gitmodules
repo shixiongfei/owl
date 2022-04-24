@@ -13,6 +13,3 @@
 [submodule "3rd/actor"]
 	path = 3rd/actor
 	url = https://github.com/shixiongfei/actor.git
-[submodule "3rd/chipmunk2d"]
-	path = 3rd/chipmunk2d
-	url = https://github.com/slembcke/Chipmunk2D.git
