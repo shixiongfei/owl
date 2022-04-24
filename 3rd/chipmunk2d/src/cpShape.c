@@ -151,7 +151,7 @@ cpShapeGetFriction(const cpShape *shape)
 void
 cpShapeSetFriction(cpShape *shape, cpFloat friction)
 {
-	cpAssertHard(friction >= 0.0f, "Friction must be postive.");
+	cpAssertHard(friction >= 0.0f, "Friction must be positive.");
 	cpBodyActivate(shape->body);
 	shape->u = friction;
 }
@@ -368,6 +368,11 @@ cpCircleShapeGetRadius(const cpShape *shape)
 	return ((cpCircleShape *)shape)->r;
 }
 
+cpBool
+cpShapeIsCircle(const cpShape *shape)
+{
+	return shape->klass == &cpCircleShapeClass;
+}
 
 cpSegmentShape *
 cpSegmentShapeAlloc(void)
@@ -601,4 +606,10 @@ cpSegmentShapeSetRadius(cpShape *shape, cpFloat radius)
 	cpFloat mass = shape->massInfo.m;
 	shape->massInfo = cpSegmentShapeMassInfo(shape->massInfo.m, seg->a, seg->b, seg->r);
 	if(mass > 0.0f) cpBodyAccumulateMassFromShapes(shape->body);
+}
+
+cpBool
+cpShapeIsSegment(const cpShape *shape)
+{
+	return shape->klass == &cpSegmentShapeClass;
 }
