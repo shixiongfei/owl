@@ -110,8 +110,10 @@ workspace ( "owl" )
     kind ( "SharedLib" )
     language ( "C" )
     files { "./vm/**.h", "./vm/**.c",
-            "./include/owlvm.h" }
-    includedirs { "./include" }
+            "./include/owlvm.h",
+            "./3rd/libbf/cutils.h", "./3rd/libbf/cutils.c",
+            "./3rd/libbf/libbf.h", "./3rd/libbf/libbf.c" }
+    includedirs { "./include", "./3rd/libbf" }
     libdirs { "./libs" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
