@@ -1,2 +1,3 @@
 # Owl
-Owl is a game engine for pixel art
+
+Owl is a Smalltalk dialect used for game engine.
