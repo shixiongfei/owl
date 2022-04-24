@@ -10,3 +10,6 @@
 [submodule "3rd/nio4c"]
 	path = 3rd/nio4c
 	url = https://github.com/shixiongfei/nio4c.git
+[submodule "3rd/actor"]
+	path = 3rd/actor
+	url = https://github.com/shixiongfei/actor.git
