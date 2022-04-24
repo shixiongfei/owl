@@ -116,7 +116,7 @@ static int owl_main(int argc, char *argv[]) {
       owl_pixel(screen, 55, 20);
 
     owl_matrix_apply(&m, &v, v.x, v.y);
-    owl_line(screen, (s32)c.x, (s32)c.y, (s32)ceilf(v.x), (s32)ceilf(v.y));
+    owl_line(screen, (s32)c.x, (s32)c.y, (s32)ceil(v.x), (s32)ceil(v.y));
 
     owl_color(screen, owl_rgb(0xff, 0, 0));
     owl_pixel(screen, 10, 10);
