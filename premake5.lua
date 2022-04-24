@@ -10,6 +10,7 @@
 
 workspace ( "owl" )
   configurations { "Release", "Debug" }
+  startproject "owl"
 
   if os.istarget("macosx") or os.istarget("ios") then
     platforms { "universal" }
@@ -23,6 +24,9 @@ workspace ( "owl" )
     os.rmdir("objs")
     os.remove("owl.VC.db")
     os.remove("owl.sln")
+    os.remove("SDL2.vcxproj")
+    os.remove("SDL2.vcxproj.filters")
+    os.remove("SDL2.vcxproj.user")
     os.remove("SDL2main.vcxproj")
     os.remove("SDL2main.vcxproj.filters")
     os.remove("SDL2main.vcxproj.user")
@@ -35,6 +39,7 @@ workspace ( "owl" )
     os.remove("owl.vcxproj")
     os.remove("owl.vcxproj.filters")
     os.remove("owl.vcxproj.user")
+    os.remove("SDL2.make")
     os.remove("SDL2main.make")
     os.remove("owlcore.make")
     os.remove("owlvm.make")
@@ -42,6 +47,130 @@ workspace ( "owl" )
     os.remove("Makefile")
     return
   end
+
+  -- A project defines one build target
+  project ( "SDL2" )
+    kind ( "SharedLib" )
+    language ( "C" )
+    files { "./3rd/sdl2/include/*.h",
+            "./3rd/sdl2/src/*.h", "./3rd/sdl2/src/*.c",
+            "./3rd/sdl2/src/atomic/*.h", "./3rd/sdl2/src/atomic/*.c",
+            "./3rd/sdl2/src/audio/*.h", "./3rd/sdl2/src/audio/*.c",
+            "./3rd/sdl2/src/audio/dummy/*.h", "./3rd/sdl2/src/audio/dummy/*.c",
+            "./3rd/sdl2/src/cpuinfo/*.h", "./3rd/sdl2/src/cpuinfo/*.c",
+            "./3rd/sdl2/src/dynapi/*.h", "./3rd/sdl2/src/dynapi/*.c",
+            "./3rd/sdl2/src/events/*.h", "./3rd/sdl2/src/events/*.c",
+            "./3rd/sdl2/src/file/*.h", "./3rd/sdl2/src/file/*.c",
+            "./3rd/sdl2/src/filesystem/*.h", "./3rd/sdl2/src/filesystem/*.c",
+            "./3rd/sdl2/src/haptic/*.h", "./3rd/sdl2/src/haptic/*.c",
+            "./3rd/sdl2/src/haptic/dummy/*.h", "./3rd/sdl2/src/haptic/dummy/*.c",
+            "./3rd/sdl2/src/hidapi/*.h", "./3rd/sdl2/src/hidapi/*.c",
+            "./3rd/sdl2/src/joystick/*.h", "./3rd/sdl2/src/joystick/*.c",
+            "./3rd/sdl2/src/joystick/dummy/*.h", "./3rd/sdl2/src/joystick/dummy/*.c",
+            "./3rd/sdl2/src/joystick/hidapi/*.h", "./3rd/sdl2/src/joystick/hidapi/*.c",
+            "./3rd/sdl2/src/joystick/virtual/*.h", "./3rd/sdl2/src/joystick/virtual/*.c",
+            "./3rd/sdl2/src/libm/*.h", "./3rd/sdl2/src/libm/*.c",
+            "./3rd/sdl2/src/loadso/*.h", "./3rd/sdl2/src/loadso/*.c",
+            "./3rd/sdl2/src/locale/*.h", "./3rd/sdl2/src/locale/*.c",
+            "./3rd/sdl2/src/misc/*.h", "./3rd/sdl2/src/misc/*.c",
+            "./3rd/sdl2/src/power/*.h", "./3rd/sdl2/src/power/*.c",
+            "./3rd/sdl2/src/render/*.h", "./3rd/sdl2/src/render/*.c",
+            "./3rd/sdl2/src/render/opengl/*.h", "./3rd/sdl2/src/render/opengl/*.c",
+            "./3rd/sdl2/src/render/opengles2/*.h", "./3rd/sdl2/src/render/opengles2/*.c",
+            "./3rd/sdl2/src/render/software/*.h", "./3rd/sdl2/src/render/software/*.c",
+            "./3rd/sdl2/src/sensor/*.h", "./3rd/sdl2/src/sensor/*.c",
+            "./3rd/sdl2/src/sensor/dummy/*.h", "./3rd/sdl2/src/sensor/dummy/*.c",
+            "./3rd/sdl2/src/stdlib/*.h", "./3rd/sdl2/src/stdlib/*.c",
+            "./3rd/sdl2/src/thread/*.h", "./3rd/sdl2/src/thread/*.c",
+            "./3rd/sdl2/src/timer/*.h", "./3rd/sdl2/src/timer/*.c",
+            "./3rd/sdl2/src/video/*.h", "./3rd/sdl2/src/video/*.c",
+            "./3rd/sdl2/src/video/dummy/*.h", "./3rd/sdl2/src/video/dummy/*.c", 
+            "./3rd/sdl2/src/video/khronos/*.h", "./3rd/sdl2/src/video/khronos/*.c", 
+            "./3rd/sdl2/src/video/yuv2rgb/*.h", "./3rd/sdl2/src/video/yuv2rgb/*.c" }
+    includedirs { "./3rd/sdl2/include" }
+    objdir ( "./objs" )
+    targetdir ( "./bin" )
+    defines { "_UNICODE", "DLL_EXPORT" }
+    staticruntime "On"
+
+    filter ( "configurations:Release" )
+      optimize "On"
+      defines { "NDEBUG", "_NDEBUG" }
+
+    filter ( "configurations:Debug" )
+      symbols "On"
+      defines { "DEBUG", "_DEBUG" }
+
+    filter ( "action:vs*" )
+      defines { "WIN32", "_WIN32", "_WINDOWS",
+                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
+                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      files { "./3rd/sdl2/src/audio/directsound/*.h", "./3rd/sdl2/src/audio/directsound/*.c",
+              "./3rd/sdl2/src/audio/disk/*.h", "./3rd/sdl2/src/audio/disk/*.c",
+              "./3rd/sdl2/src/audio/wasapi/*.h", "./3rd/sdl2/src/audio/wasapi/*.c",
+              "./3rd/sdl2/src/audio/winmm/*.h", "./3rd/sdl2/src/audio/winmm/*.c",
+              "./3rd/sdl2/src/core/windows/*.h", "./3rd/sdl2/src/core/windows/*.c",
+              "./3rd/sdl2/src/filesystem/windows/*.h", "./3rd/sdl2/src/filesystem/windows/*.c",
+              "./3rd/sdl2/src/haptic/windows/*.h", "./3rd/sdl2/src/haptic/windows/*.c",
+              "./3rd/sdl2/src/joystick/windows/*.h", "./3rd/sdl2/src/joystick/windows/*.c",
+              "./3rd/sdl2/src/loadso/windows/*.h", "./3rd/sdl2/src/loadso/windows/*.c",
+              "./3rd/sdl2/src/locale/windows/*.h", "./3rd/sdl2/src/locale/windows/*.c",
+              "./3rd/sdl2/src/misc/windows/*.h", "./3rd/sdl2/src/misc/windows/*.c",
+              "./3rd/sdl2/src/power/windows/*.h", "./3rd/sdl2/src/power/windows/*.c",
+              "./3rd/sdl2/src/render/direct3d/*.h", "./3rd/sdl2/src/render/direct3d/*.c",
+              "./3rd/sdl2/src/render/direct3d11/*.h", "./3rd/sdl2/src/render/direct3d11/*.c",
+              "./3rd/sdl2/src/sensor/windows/*.h", "./3rd/sdl2/src/sensor/windows/*.c",
+              "./3rd/sdl2/src/thread/generic/SDL_syscond_c.h", "./3rd/sdl2/src/thread/generic/SDL_syscond.c",
+              "./3rd/sdl2/src/thread/windows/*.h", "./3rd/sdl2/src/thread/windows/*.c",
+              "./3rd/sdl2/src/timer/windows/*.h", "./3rd/sdl2/src/timer/windows/*.c",
+              "./3rd/sdl2/src/video/windows/*.h", "./3rd/sdl2/src/video/windows/*.c" }
+      flags { "NoRuntimeChecks", "NoBufferSecurityCheck" }
+      links { "setupapi.lib", "winmm.lib", "imm32.lib", "version.lib" }
+
+    filter ( "action:gmake" )
+      warnings  "Default" --"Extra"
+      files { "./3rd/sdl2/src/loadso/dummy/*.h", "./3rd/sdl2/src/loadso/dummy/*.c",
+              "./3rd/sdl2/src/loadso/dlopen/*.h", "./3rd/sdl2/src/loadso/dlopen/*.c",
+              "./3rd/sdl2/src/thread/pthread/*.h", "./3rd/sdl2/src/thread/pthread/*.c",
+              "./3rd/sdl2/src/timer/dummy/*.h", "./3rd/sdl2/src/timer/dummy/*.c",
+              "./3rd/sdl2/src/timer/unix/*.h", "./3rd/sdl2/src/timer/unix/*.c", }
+
+    filter { "action:gmake", "system:macosx" }
+      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
+      files { "./3rd/sdl2/src/audio/coreaudio/*.h", "./3rd/sdl2/src/audio/coreaudio/*.m",
+              "./3rd/sdl2/src/audio/disk/*.h", "./3rd/sdl2/src/audio/disk/*.c",
+              "./3rd/sdl2/src/file/cocoa/*.h", "./3rd/sdl2/src/file/cocoa/*.m",
+              "./3rd/sdl2/src/filesystem/cocoa/*.h", "./3rd/sdl2/src/filesystem/cocoa/*.m",
+              "./3rd/sdl2/src/filesystem/dummy/*.h", "./3rd/sdl2/src/filesystem/dummy/*.c",
+              "./3rd/sdl2/src/haptic/darwin/*.h", "./3rd/sdl2/src/haptic/darwin/*.c",
+              "./3rd/sdl2/src/hidapi/mac/*.h", "./3rd/sdl2/src/hidapi/mac/*.c",
+              "./3rd/sdl2/src/hidapi/ios/*.h", "./3rd/sdl2/src/hidapi/ios/*.m",
+              "./3rd/sdl2/src/joystick/darwin/*.h", "./3rd/sdl2/src/joystick/darwin/*.c",
+              "./3rd/sdl2/src/joystick/iphoneos/*.h", "./3rd/sdl2/src/joystick/iphoneos/*.m",
+              "./3rd/sdl2/src/joystick/steam/*.h", "./3rd/sdl2/src/joystick/steam/*.c",
+              "./3rd/sdl2/src/locale/macosx/*.h", "./3rd/sdl2/src/locale/macosx/*.m",
+              "./3rd/sdl2/src/main/uikit/*.h", "./3rd/sdl2/src/main/uikit/*.c",
+              "./3rd/sdl2/src/misc/ios/*.h", "./3rd/sdl2/src/misc/ios/*.m",
+              "./3rd/sdl2/src/misc/macosx/*.h", "./3rd/sdl2/src/misc/macosx/*.m",
+              "./3rd/sdl2/src/power/macosx/*.h", "./3rd/sdl2/src/power/macosx/*.c",
+              "./3rd/sdl2/src/power/uikit/*.h", "./3rd/sdl2/src/power/uikit/*.m",
+              "./3rd/sdl2/src/render/metal/*.h", "./3rd/sdl2/src/render/metal/*.m", "./3rd/sdl2/src/render/metal/*.metal",
+              "./3rd/sdl2/src/render/opengles/*.h", "./3rd/sdl2/src/render/opengles/*.c",
+              "./3rd/sdl2/src/sensor/coremotion/*.h", "./3rd/sdl2/src/sensor/coremotion/*.m",
+              "./3rd/sdl2/src/video/cocoa/*.h", "./3rd/sdl2/src/video/cocoa/*.m", 
+              "./3rd/sdl2/src/video/offscreen/*.h", "./3rd/sdl2/src/video/offscreen/*.c", 
+              "./3rd/sdl2/src/video/uikit/*.h", "./3rd/sdl2/src/video/uikit/*.m" }
+      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
+      links { "AudioToolbox.framework", "Carbon.framework", "Cocoa.framework", "CoreAudio.framework",
+              "CoreFoundation.framework", "CoreHaptics.framework", "CoreVideo.framework", "ForceFeedback.framework",
+              "GameController.framework", "IOKit.framework", "Metal.framework", "QuartzCore.framework" }
+
+    filter { "action:gmake", "system:linux" }
+      defines { "__linux__" }
+      linkoptions { "-Wl,-rpath=." }
+
+    filter { "action:gmake", "system:bsd" }
+      defines { "__BSD__" }
 
   -- A project defines one build target
   project ( "SDL2main" )
@@ -66,26 +195,22 @@ workspace ( "owl" )
       defines { "WIN32", "_WIN32", "_WINDOWS",
                 "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
                 "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
-      files { "./3rd/sdl2/src/main/windows/*.c" }
+      files { "./3rd/sdl2/src/main/windows/*.h",
+              "./3rd/sdl2/src/main/windows/*.c" }
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
+      files { "./3rd/sdl2/src/main/dummy/*.h",
+              "./3rd/sdl2/src/main/dummy/*.c" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
-      files { "./3rd/sdl2/src/main/dummy/*.c" }
-
-    filter { "action:xcode4", "system:ios" }
-      defines { "__APPLE__", "__IOS__" }
-      files { "./3rd/sdl2/src/main/uikit/*.c" }
 
     filter { "action:gmake", "system:linux" }
       defines { "__linux__" }
-      files { "./3rd/sdl2/src/main/dummy/*.c" }
 
     filter { "action:gmake", "system:bsd" }
       defines { "__BSD__" }
-      files { "./3rd/sdl2/src/main/dummy/*.c" }
 
   -- A project defines one build target
   project ( "owlcore" )
@@ -98,7 +223,7 @@ workspace ( "owl" )
     includedirs { "./include", "./3rd",
                   "./3rd/sdl2/include",
                   "./3rd/utf8" }
-    libdirs { "./libs" }
+    libdirs { "./bin" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
     targetname ( "OwlCore" )
@@ -119,31 +244,14 @@ workspace ( "owl" )
                 "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
                 "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
 
-    filter { "action:vs*", "configurations:Release" }
-      libdirs { "./libs/sdl2/Release" }
-      postbuildcommands {
-        "{COPY} ./libs/sdl2/Release/SDL2.dll %{cfg.targetdir}",
-        "{COPY} ./libs/sdl2/Release/SDL2.pdb %{cfg.targetdir}"
-      }
-
-    filter { "action:vs*", "configurations:Debug" }
-      libdirs { "./libs/sdl2/Debug" }
-      postbuildcommands {
-        "{COPY} ./libs/sdl2/Debug/SDL2.dll %{cfg.targetdir}",
-        "{COPY} ./libs/sdl2/Debug/SDL2.pdb %{cfg.targetdir}"
-      }
-
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
       links { "m", "iconv" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
-      linkoptions { "-rpath @executable_path" }
+      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
       links { "CoreFoundation.framework" }
-      postbuildcommands {
-        "{COPY} ./libs/libSDL2.dylib %{cfg.targetdir}",
-      }
 
     filter { "action:gmake", "system:linux" }
       defines { "__linux__" }
@@ -162,7 +270,7 @@ workspace ( "owl" )
             "./3rd/libbf/cutils.h", "./3rd/libbf/cutils.c",
             "./3rd/libbf/libbf.h", "./3rd/libbf/libbf.c" }
     includedirs { "./include", "./3rd/libbf" }
-    libdirs { "./libs" }
+    libdirs { "./bin" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
     targetname ( "OwlVM" )
@@ -187,7 +295,7 @@ workspace ( "owl" )
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
-      linkoptions { "-rpath @executable_path" }
+      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
 
     filter { "action:gmake", "system:linux" }
       defines { "__linux__" }
@@ -195,7 +303,6 @@ workspace ( "owl" )
 
     filter { "action:gmake", "system:bsd" }
       defines { "__BSD__" }
-
 
   -- A project defines one build target
   project ( "owl" )
@@ -209,7 +316,7 @@ workspace ( "owl" )
     includedirs { "./include", "./3rd/sdl2/include",
                   "./3rd/actor", "./3rd/nio4c",
                   "./3rd/chipmunk2d/include" }
-    libdirs { "./libs", "./bin" }
+    libdirs { "./bin" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
     links { "SDL2main", "OwlCore", "OwlVM" }
@@ -229,12 +336,6 @@ workspace ( "owl" )
                 "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
                 "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
       links { "Ws2_32", "IPHLPAPI", "SDL2" }
-
-    filter { "action:vs*", "configurations:Release" }
-      libdirs { "./libs/sdl2/Release" }
-
-    filter { "action:vs*", "configurations:Debug" }
-      libdirs { "./libs/sdl2/Debug" }
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
