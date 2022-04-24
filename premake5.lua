@@ -155,10 +155,12 @@ workspace ( "owl" )
     language ( "C" )
     files { "./src/**.h", "./src/**.c",
             "./3rd/actor/*.h", "./3rd/actor/*.c",
-            "./3rd/nio4c/*.h", "./3rd/nio4c/*.c" }
+            "./3rd/nio4c/*.h", "./3rd/nio4c/*.c",
+            "./3rd/chipmunk2d/include/**.h", "./3rd/chipmunk2d/src/*.c" }
     excludes { "./3rd/actor/test.c", "./3rd/nio4c/test.c" }
     includedirs { "./include", "./3rd/sdl2/include",
-                  "./3rd/actor", "./3rd/nio4c" }
+                  "./3rd/actor", "./3rd/nio4c",
+                  "./3rd/chipmunk2d/include" }
     libdirs { "./libs", "./bin" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
