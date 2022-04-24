@@ -153,13 +153,17 @@ workspace ( "owl" )
   project ( "owl" )
     kind ( "WindowedApp" )
     language ( "C" )
-    files { "./src/**.h", "./src/**.c" }
-    includedirs { "./include", "./3rd/sdl2/include" }
+    files { "./src/**.h", "./src/**.c",
+            "./3rd/actor/*.h", "./3rd/actor/*.c",
+            "./3rd/nio4c/*.h", "./3rd/nio4c/*.c" }
+    excludes { "./3rd/actor/test.c", "./3rd/nio4c/test.c" }
+    includedirs { "./include", "./3rd/sdl2/include",
+                  "./3rd/actor", "./3rd/nio4c" }
     libdirs { "./libs", "./bin" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
     links { "SDL2main", "OwlCore", "OwlVM" }
-    defines { "_UNICODE" }
+    defines { "_UNICODE", "ACTOR_STATIC", "NIO_STATIC" }
     staticruntime "On"
 
     filter ( "configurations:Release" )
@@ -174,7 +178,7 @@ workspace ( "owl" )
       defines { "WIN32", "_WIN32", "_WINDOWS",
                 "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
                 "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
-      links { "SDL2" }
+      links { "Ws2_32", "IPHLPAPI", "SDL2" }
 
     filter { "action:vs*", "configurations:Release" }
       libdirs { "./libs/sdl2/Release" }
@@ -188,9 +192,12 @@ workspace ( "owl" )
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
+      links { "Foundation.framework", "IOKit.framework" }
 
     filter { "action:gmake", "system:linux" }
       defines { "__linux__" }
+      links { "pthread" }
 
     filter { "action:gmake", "system:bsd" }
       defines { "__BSD__" }
+      links { "pthread" }

@@ -16,10 +16,18 @@
 #include <string.h>
 
 #include "SDL_main.h"
+#include "actor.h"
+#include "nio4c.h"
 #include "owl.h"
 #include "owlvm.h"
 
-int main(int argc, char *argv[]) {
+typedef struct Args {
+  int retval;
+  int argc;
+  char **argv;
+} Args;
+
+static int owl_main(int argc, char *argv[]) {
   bool quit = false;
   char title[128];
   owl_Event event;
@@ -164,4 +172,21 @@ int main(int argc, char *argv[]) {
 
   owl_quit();
   return 0;
+}
+
+static void actor_main(void *param) {
+  Args *args = (Args *)param;
+  args->retval = owl_main(args->argc, args->argv);
+}
+
+int main(int argc, char *argv[]) {
+  Args args = {-1, argc, argv};
+
+  nio_initialize(NULL);
+  actor_initialize();
+  actor_wrap(actor_main, &args);
+  actor_finalize();
+  nio_finalize();
+
+  return args.retval;
 }
