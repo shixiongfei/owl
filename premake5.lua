@@ -18,6 +18,7 @@ workspace ( "owl" )
     platforms { "x64" }
   end
 
+
   if _ACTION == "clean" then
     os.rmdir(".vs")
     os.rmdir("bin")
@@ -47,6 +48,7 @@ workspace ( "owl" )
     os.remove("Makefile")
     return
   end
+
 
   -- A project defines one build target
   project ( "SDL2" )
@@ -84,8 +86,8 @@ workspace ( "owl" )
             "./3rd/sdl2/src/thread/*.h", "./3rd/sdl2/src/thread/*.c",
             "./3rd/sdl2/src/timer/*.h", "./3rd/sdl2/src/timer/*.c",
             "./3rd/sdl2/src/video/*.h", "./3rd/sdl2/src/video/*.c",
-            "./3rd/sdl2/src/video/dummy/*.h", "./3rd/sdl2/src/video/dummy/*.c", 
-            "./3rd/sdl2/src/video/khronos/*.h", "./3rd/sdl2/src/video/khronos/*.c", 
+            "./3rd/sdl2/src/video/dummy/*.h", "./3rd/sdl2/src/video/dummy/*.c",
+            "./3rd/sdl2/src/video/khronos/*.h", "./3rd/sdl2/src/video/khronos/*.c",
             "./3rd/sdl2/src/video/yuv2rgb/*.h", "./3rd/sdl2/src/video/yuv2rgb/*.c" }
     includedirs { "./3rd/sdl2/include" }
     objdir ( "./objs" )
@@ -134,9 +136,12 @@ workspace ( "owl" )
               "./3rd/sdl2/src/thread/pthread/*.h", "./3rd/sdl2/src/thread/pthread/*.c",
               "./3rd/sdl2/src/timer/dummy/*.h", "./3rd/sdl2/src/timer/dummy/*.c",
               "./3rd/sdl2/src/timer/unix/*.h", "./3rd/sdl2/src/timer/unix/*.c", }
+      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
 
     filter { "action:gmake", "system:macosx" }
-      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
+      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh", "MAC_OS_X_VERSION_MIN_REQUIRED=1060",
+                "TARGET_API_MAC_CARBON", "TARGET_API_MAC_OSX", "_THREAD_SAFE" }
+      includedirs { "./3rd/sdl2/src/video/khronos", "./3rd/sdl2/src/hidapi/hidapi" }
       files { "./3rd/sdl2/src/audio/coreaudio/*.h", "./3rd/sdl2/src/audio/coreaudio/*.m",
               "./3rd/sdl2/src/audio/disk/*.h", "./3rd/sdl2/src/audio/disk/*.c",
               "./3rd/sdl2/src/file/cocoa/*.h", "./3rd/sdl2/src/file/cocoa/*.m",
@@ -144,33 +149,35 @@ workspace ( "owl" )
               "./3rd/sdl2/src/filesystem/dummy/*.h", "./3rd/sdl2/src/filesystem/dummy/*.c",
               "./3rd/sdl2/src/haptic/darwin/*.h", "./3rd/sdl2/src/haptic/darwin/*.c",
               "./3rd/sdl2/src/hidapi/mac/*.h", "./3rd/sdl2/src/hidapi/mac/*.c",
-              "./3rd/sdl2/src/hidapi/ios/*.h", "./3rd/sdl2/src/hidapi/ios/*.m",
               "./3rd/sdl2/src/joystick/darwin/*.h", "./3rd/sdl2/src/joystick/darwin/*.c",
               "./3rd/sdl2/src/joystick/iphoneos/*.h", "./3rd/sdl2/src/joystick/iphoneos/*.m",
               "./3rd/sdl2/src/joystick/steam/*.h", "./3rd/sdl2/src/joystick/steam/*.c",
               "./3rd/sdl2/src/locale/macosx/*.h", "./3rd/sdl2/src/locale/macosx/*.m",
-              "./3rd/sdl2/src/main/uikit/*.h", "./3rd/sdl2/src/main/uikit/*.c",
-              "./3rd/sdl2/src/misc/ios/*.h", "./3rd/sdl2/src/misc/ios/*.m",
               "./3rd/sdl2/src/misc/macosx/*.h", "./3rd/sdl2/src/misc/macosx/*.m",
               "./3rd/sdl2/src/power/macosx/*.h", "./3rd/sdl2/src/power/macosx/*.c",
               "./3rd/sdl2/src/power/uikit/*.h", "./3rd/sdl2/src/power/uikit/*.m",
               "./3rd/sdl2/src/render/metal/*.h", "./3rd/sdl2/src/render/metal/*.m", "./3rd/sdl2/src/render/metal/*.metal",
               "./3rd/sdl2/src/render/opengles/*.h", "./3rd/sdl2/src/render/opengles/*.c",
               "./3rd/sdl2/src/sensor/coremotion/*.h", "./3rd/sdl2/src/sensor/coremotion/*.m",
-              "./3rd/sdl2/src/video/cocoa/*.h", "./3rd/sdl2/src/video/cocoa/*.m", 
-              "./3rd/sdl2/src/video/offscreen/*.h", "./3rd/sdl2/src/video/offscreen/*.c", 
+              "./3rd/sdl2/src/video/cocoa/*.h", "./3rd/sdl2/src/video/cocoa/*.m",
+              "./3rd/sdl2/src/video/offscreen/*.h", "./3rd/sdl2/src/video/offscreen/*.c",
               "./3rd/sdl2/src/video/uikit/*.h", "./3rd/sdl2/src/video/uikit/*.m" }
-      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
+      buildoptions { "-mmacosx-version-min=10.6", "-Wno-deprecated-declarations" }
+      linkoptions { "-Wl,-weak_framework,CoreHaptics", "-Wl,-weak_framework,GameController",
+                    "-Wl,-weak_framework,QuartzCore", "-Wl,-weak_framework,Metal" }
       links { "AudioToolbox.framework", "Carbon.framework", "Cocoa.framework", "CoreAudio.framework",
-              "CoreFoundation.framework", "CoreHaptics.framework", "CoreVideo.framework", "ForceFeedback.framework",
-              "GameController.framework", "IOKit.framework", "Metal.framework", "QuartzCore.framework" }
+              "CoreFoundation.framework", "CoreVideo.framework", "ForceFeedback.framework", "IOKit.framework" }
 
-    filter { "action:gmake", "system:linux" }
-      defines { "__linux__" }
-      linkoptions { "-Wl,-rpath=." }
-
-    filter { "action:gmake", "system:bsd" }
-      defines { "__BSD__" }
+    -- TODO: IOS make
+    filter { "action:gmake", "system:ios" }
+      defines { "__APPLE__", "__IOS__" }
+      includedirs { "./3rd/sdl2/src/video/khronos", "./3rd/sdl2/src/hidapi/hidapi" }
+      files { "./3rd/sdl2/src/hidapi/ios/*.h", "./3rd/sdl2/src/hidapi/ios/*.m",
+              "./3rd/sdl2/src/main/uikit/*.h", "./3rd/sdl2/src/main/uikit/*.c",
+              "./3rd/sdl2/src/misc/ios/*.h", "./3rd/sdl2/src/misc/ios/*.m" }
+      buildoptions {}
+      linkoptions {}
+      links {}
 
   -- A project defines one build target
   project ( "SDL2main" )
@@ -206,11 +213,6 @@ workspace ( "owl" )
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
 
-    filter { "action:gmake", "system:linux" }
-      defines { "__linux__" }
-
-    filter { "action:gmake", "system:bsd" }
-      defines { "__BSD__" }
 
   -- A project defines one build target
   project ( "owlcore" )
@@ -246,19 +248,12 @@ workspace ( "owl" )
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
+      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
       links { "m", "iconv" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
-      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
       links { "CoreFoundation.framework" }
-
-    filter { "action:gmake", "system:linux" }
-      defines { "__linux__" }
-      linkoptions { "-Wl,-rpath=." }
-
-    filter { "action:gmake", "system:bsd" }
-      defines { "__BSD__" }
 
 
   -- A project defines one build target
@@ -292,17 +287,11 @@ workspace ( "owl" )
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
+      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
-      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
 
-    filter { "action:gmake", "system:linux" }
-      defines { "__linux__" }
-      linkoptions { "-Wl,-rpath=." }
-
-    filter { "action:gmake", "system:bsd" }
-      defines { "__BSD__" }
 
   -- A project defines one build target
   project ( "owl" )
@@ -339,16 +328,7 @@ workspace ( "owl" )
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
-      links { "m", "iconv" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
       links { "Foundation.framework", "IOKit.framework" }
-
-    filter { "action:gmake", "system:linux" }
-      defines { "__linux__" }
-      links { "pthread" }
-
-    filter { "action:gmake", "system:bsd" }
-      defines { "__BSD__" }
-      links { "pthread" }
