@@ -88,7 +88,7 @@ static f32 owl_fontwidth(owl_Font *font, const char *text) {
     width += owl_fontwide(font, ch, last);
     last = ch;
   }
-  return ceilf(width);
+  return width;
 }
 
 static u8 *owl_fontbitmap(owl_Font *font, const char *text, s32 *w, s32 *h) {
@@ -237,9 +237,9 @@ owl_Canvas *owl_text(const char *text, owl_Pixel color) {
   return canvas;
 }
 
-s32 owl_textwidth(const char *text) {
+f32 owl_textwidth(const char *text) {
   if (!text)
-    return -1;
+    return -1.0f;
 
-  return (s32)owl_fontwidth(&font, text);
+  return owl_fontwidth(&font, text);
 }

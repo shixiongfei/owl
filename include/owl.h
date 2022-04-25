@@ -404,7 +404,7 @@ OWL_API bool owl_loadfont(const char *name, const char *filename);
 OWL_API bool owl_font(const char *name, s32 size);
 
 OWL_API owl_Canvas *owl_text(const char *text, owl_Pixel color);
-OWL_API s32 owl_textwidth(const char *text);
+OWL_API f32 owl_textwidth(const char *text);
 
 OWL_API owl_Audio owl_audio(s32 freq, u8 format, u8 channels, u16 samples);
 OWL_API void owl_closeaudio(owl_Audio audio);
