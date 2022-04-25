@@ -136,12 +136,12 @@ typedef union owl_Pixel {
 } owl_Pixel;
 
 typedef struct owl_Point {
-  s32 x, y;
+  f32 x, y;
 } owl_Point;
 
 typedef struct owl_Rect {
-  s32 x, y;
-  s32 w, h;
+  f32 x, y;
+  f32 w, h;
 } owl_Rect;
 
 typedef struct owl_Vector2 {
@@ -381,18 +381,17 @@ OWL_API void owl_blendmode(owl_Canvas *canvas, s32 mode);
 OWL_API void owl_target(owl_Canvas *canvas);
 OWL_API void owl_color(owl_Pixel color);
 OWL_API void owl_clear(void);
-OWL_API void owl_fill(s32 x, s32 y, s32 w, s32 h);
 
-OWL_API void owl_pixel(s32 x, s32 y);
+OWL_API void owl_pixel(f32 x, f32 y);
 OWL_API void owl_pixels(const owl_Point *points, s32 n);
 
-OWL_API void owl_line(s32 x1, s32 y1, s32 x2, s32 y2);
+OWL_API void owl_line(f32 x1, f32 y1, f32 x2, f32 y2);
 OWL_API void owl_lines(const owl_Point *points, s32 n);
 
-OWL_API void owl_rect(s32 x, s32 y, s32 w, s32 h);
+OWL_API void owl_rect(f32 x, f32 y, f32 w, f32 h);
 OWL_API void owl_rects(const owl_Rect *rects, s32 n);
 
-OWL_API void owl_fillrect(s32 x, s32 y, s32 w, s32 h);
+OWL_API void owl_fillrect(f32 x, f32 y, f32 w, f32 h);
 OWL_API void owl_fillrects(const owl_Rect *rects, s32 n);
 
 OWL_API void owl_clip(const owl_Rect *rect);

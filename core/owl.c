@@ -272,58 +272,72 @@ void owl_color(owl_Pixel color) {
 
 void owl_clear(void) { SDL_RenderClear(app->renderer); }
 
-void owl_fill(s32 x, s32 y, s32 w, s32 h) {
-  SDL_Rect rect = {x, y, w, h};
-  SDL_RenderFillRect(app->renderer, &rect);
-}
-
-void owl_pixel(s32 x, s32 y) { SDL_RenderDrawPoint(app->renderer, x, y); }
+void owl_pixel(f32 x, f32 y) { SDL_RenderDrawPointF(app->renderer, x, y); }
 
 void owl_pixels(const owl_Point *points, s32 n) {
-  SDL_RenderDrawPoints(app->renderer, (const SDL_Point *)points, n);
+  SDL_RenderDrawPointsF(app->renderer, (const SDL_FPoint *)points, n);
 }
 
-void owl_line(s32 x1, s32 y1, s32 x2, s32 y2) {
-  SDL_RenderDrawLine(app->renderer, x1, y1, x2, y2);
+void owl_line(f32 x1, f32 y1, f32 x2, f32 y2) {
+  SDL_RenderDrawLineF(app->renderer, x1, y1, x2, y2);
 }
 
 void owl_lines(const owl_Point *points, s32 n) {
-  SDL_RenderDrawLines(app->renderer, (const SDL_Point *)points, n);
+  SDL_RenderDrawLinesF(app->renderer, (const SDL_FPoint *)points, n);
 }
 
-void owl_rect(s32 x, s32 y, s32 w, s32 h) {
-  SDL_Rect rect = {x, y, w, h};
-  SDL_RenderDrawRect(app->renderer, &rect);
+void owl_rect(f32 x, f32 y, f32 w, f32 h) {
+  SDL_FRect rect = {x, y, w, h};
+  SDL_RenderDrawRectF(app->renderer, &rect);
 }
 
 void owl_rects(const owl_Rect *rects, s32 n) {
-  SDL_RenderDrawRects(app->renderer, (const SDL_Rect *)rects, n);
+  SDL_RenderDrawRectsF(app->renderer, (const SDL_FRect *)rects, n);
 }
 
-void owl_fillrect(s32 x, s32 y, s32 w, s32 h) {
-  SDL_Rect rect = {x, y, w, h};
-  SDL_RenderFillRect(app->renderer, &rect);
+void owl_fillrect(f32 x, f32 y, f32 w, f32 h) {
+  SDL_FRect rect = {x, y, w, h};
+  SDL_RenderFillRectF(app->renderer, &rect);
 }
 
 void owl_fillrects(const owl_Rect *rects, s32 n) {
-  SDL_RenderFillRects(app->renderer, (const SDL_Rect *)rects, n);
+  SDL_RenderFillRectsF(app->renderer, (const SDL_FRect *)rects, n);
 }
 
 void owl_clip(const owl_Rect *rect) {
-  SDL_RenderSetClipRect(app->renderer, (const SDL_Rect *)rect);
+  SDL_Rect irect, *clip = NULL;
+
+  if (rect) {
+    irect.x = (s32)ceilf(rect->x);
+    irect.y = (s32)ceilf(rect->y);
+    irect.w = (s32)ceilf(rect->w);
+    irect.h = (s32)ceilf(rect->h);
+    clip = &irect;
+  }
+
+  SDL_RenderSetClipRect(app->renderer, clip);
 }
 
 void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
               const owl_Rect *dstrect, f64 angle, const owl_Point *center,
               u8 flip) {
-  SDL_RenderCopyEx(app->renderer, canvas, (const SDL_Rect *)srcrect,
-                   (const SDL_Rect *)dstrect, angle, (const SDL_Point *)center,
-                   flip);
+  SDL_Rect rect, *src = NULL;
+
+  if (srcrect) {
+    rect.x = (s32)ceilf(srcrect->x);
+    rect.y = (s32)ceilf(srcrect->y);
+    rect.w = (s32)ceilf(srcrect->w);
+    rect.h = (s32)ceilf(srcrect->h);
+    src = &rect;
+  }
+
+  SDL_RenderCopyExF(app->renderer, canvas, src, (const SDL_FRect *)dstrect,
+                    angle, (const SDL_FPoint *)center, flip);
 }
 
 void owl_present(void) {
   SDL_SetRenderTarget(app->renderer, NULL);
-  SDL_RenderCopy(app->renderer, app->texture, NULL, NULL);
+  SDL_RenderCopyF(app->renderer, app->texture, NULL, NULL);
   SDL_RenderPresent(app->renderer);
 
   app->target = NULL;
