@@ -35,6 +35,7 @@ typedef struct owl_Font {
 
 static owl_Table *ttfs = NULL;
 static owl_Font font = {0};
+static SDL_PixelFormat *format = NULL;
 
 static owl_TrueType *owl_loadttf(const char *filename) {
   u8 *data = owl_readfile(filename);
@@ -137,10 +138,17 @@ static u8 *owl_fontbitmap(owl_Font *font, const char *text, s32 *w, s32 *h) {
 bool owl_fontinit(void) {
   if (!ttfs)
     ttfs = owl_table();
+
+  format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
   return ttfs != NULL;
 }
 
 void owl_fontquit(void) {
+  if (format) {
+    SDL_FreeFormat(format);
+    format = NULL;
+  }
+
   if (ttfs) {
     owl_freetable(ttfs, (owl_Dtor)owl_freettf);
     ttfs = NULL;
@@ -186,32 +194,47 @@ bool owl_font(const char *name, s32 size) {
   return true;
 }
 
-s32 owl_text(owl_Canvas *canvas, const char *text, s32 x, s32 y,
-             owl_Pixel color) {
-  owl_Rect rect = {x, y, -1, -1};
+owl_Canvas *owl_text(const char *text, owl_Pixel color) {
   f32 alpha = (f32)color.a / 0xFF;
+  owl_Canvas *canvas;
   u8 *bitmap;
-  s32 i, j;
+  u32 *pixels;
+  s32 i, w, h;
 
   if (!text)
-    return -1;
+    return NULL;
 
-  bitmap = owl_fontbitmap(&font, text, &rect.w, &rect.h);
+  bitmap = owl_fontbitmap(&font, text, &w, &h);
 
   if (!bitmap)
-    return -1;
+    return NULL;
 
-  owl_lockcanvas(canvas);
-  for (j = 0; j < rect.h; ++j)
-    for (i = 0; i < rect.w; ++i) {
-      u32 pixel = SDL_MapRGBA(canvas->format, color.r, color.g, color.b,
-                              (u8)ceilf(alpha * bitmap[j * rect.w + i]));
-      owl_drawpixel(canvas, x + i, y + j, pixel);
-    }
-  owl_unlockcanvas(canvas);
+  pixels = (u32 *)calloc(w * h, format->BytesPerPixel);
+
+  if (!pixels) {
+    free(bitmap);
+    return NULL;
+  }
+
+  canvas = owl_texture(SDL_TEXTUREACCESS_STATIC, w, h);
+
+  if (!canvas) {
+    free(bitmap);
+    free(pixels);
+    return NULL;
+  }
+
+  for (i = 0; i < w * h; ++i) {
+    u8 a = (u8)ceilf(alpha * bitmap[i]);
+    pixels[i] = SDL_MapRGBA(format, color.r, color.g, color.b, a);
+  }
+  SDL_UpdateTexture(canvas, NULL, pixels, w * format->BytesPerPixel);
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+
   free(bitmap);
+  free(pixels);
 
-  return rect.w;
+  return canvas;
 }
 
 s32 owl_textwidth(const char *text) {

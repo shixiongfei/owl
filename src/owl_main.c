@@ -27,17 +27,73 @@ typedef struct Args {
   char **argv;
 } Args;
 
+static void owl_fillellipse(s32 x, s32 y, s32 rx, s32 ry) {
+  s32 dx, dy, d1, d2, rx2, ry2, offx, offy;
+
+  offx = 0;
+  offy = ry;
+
+  rx2 = rx * rx;
+  ry2 = ry * ry;
+
+  d1 = ry2 - (rx2 * ry) + (s32)ceil(0.25 * rx2);
+  dx = 2 * ry2 * offx;
+  dy = 2 * rx2 * offy;
+
+  while (dx < dy) {
+    if (d1 < 0) {
+      offx++;
+      dx += ry2 << 1;
+      d1 += dx + ry2;
+    } else {
+      owl_line(x - offx, y + offy, x + offx, y + offy);
+      owl_line(x - offx, y - offy, x + offx, y - offy);
+
+      offx++;
+      offy--;
+      dx += ry2 << 1;
+      dy -= rx2 << 1;
+      d1 += dx - dy + ry2;
+    }
+  }
+
+  d2 = (ry2 * (s32)ceil((offx + 0.5) * (offx + 0.5))) +
+       (rx2 * ((offy - 1) * (offy - 1))) - (rx2 * ry2);
+
+  while (offy > 0) {
+    owl_line(x - offx, y + offy, x + offx, y + offy);
+    owl_line(x - offx, y - offy, x + offx, y - offy);
+
+    if (d2 > 0) {
+      offy--;
+      dy -= rx2 << 1;
+      d2 += rx2 - dy;
+    } else {
+      offy--;
+      offx++;
+      dx += ry2 << 1;
+      dy -= rx2 << 1;
+      d2 += dx - dy + rx2;
+    }
+  }
+
+  owl_line(x - rx, y, x + rx, y);
+}
+
 static int owl_main(int argc, char *argv[]) {
   bool quit = false;
   char title[128];
   owl_Event event;
-  owl_Canvas *screen, *hero, *morph;
+  owl_Canvas *screen, *hero, *morph, *text1, *text2, *text3;
   owl_Point points[4] = {{13, 13}, {13, 15}, {15, 13}, {15, 15}};
   owl_Point lines[4] = {{320, 200}, {300, 240}, {340, 240}, {320, 200}};
   owl_Rect rect = {150, 150, 500, 50};
   owl_Rect rects[2] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
   owl_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
   owl_Rect hero_pos, clip_text = {200, 50, 110, 12};
+  owl_Rect text1_pos = {200, 20, -1, -1};
+  owl_Rect text2_pos = {clip_text.x, clip_text.y, -1, -1};
+  owl_Rect text3_pos = {15, 20, -1, -1};
   owl_Rect morph_pos = {550, 10, 200, 200};
   const char *text = "中英文abc混合ABC测试!";
   const s32 SCREEN_W = 800;
@@ -77,11 +133,22 @@ static int owl_main(int argc, char *argv[]) {
   owl_textinput(true);
   owl_textinputposition(100, 100);
 
-  while (!quit) {
-    owl_color(screen, owl_rgb(0, 0, 0));
-    owl_clear(screen);
+  if (owl_font("Unifont", 16)) {
+    text1 = owl_text(text, owl_rgb(0xff, 0, 0));
+    owl_size(text1, &text1_pos.w, &text1_pos.h);
 
-    owl_color(screen, owl_rgb(0xff, 0, 0xff));
+    text2 = owl_text(text, owl_rgb(0, 0xff, 0xff));
+    owl_size(text2, &text2_pos.w, &text2_pos.h);
+
+    text3 = owl_text(text, owl_rgb(0xff, 0xff, 0));
+    owl_size(text3, &text3_pos.w, &text3_pos.h);
+  }
+
+  while (!quit) {
+    owl_color(owl_rgb(0, 0, 0));
+    owl_clear();
+
+    owl_color(owl_rgb(0xff, 0, 0xff));
 
     while (owl_event(&event)) {
       switch (event.type) {
@@ -89,7 +156,7 @@ static int owl_main(int argc, char *argv[]) {
         quit = true;
         break;
       case OWL_EVENT_MOUSEMOVE:
-        owl_pixel(screen, event.mouse.x, event.mouse.y);
+        owl_pixel(event.mouse.x, event.mouse.y);
         break;
       case OWL_EVENT_KEYUP:
         if (event.key.code == OWL_KEY_K)
@@ -110,58 +177,59 @@ static int owl_main(int argc, char *argv[]) {
     kbd = owl_keystate();
 
     if (kbd[OWL_KEY_APPLICATION])
-      owl_pixel(screen, 50, 20);
+      owl_pixel(50, 20);
 
     if (kbd[OWL_KEY_RIGHTBUTTON])
-      owl_pixel(screen, 55, 20);
+      owl_pixel(55, 20);
 
     owl_matrix_apply(&m, &v, v.x, v.y);
-    owl_line(screen, (s32)c.x, (s32)c.y, (s32)ceil(v.x), (s32)ceil(v.y));
+    owl_line((s32)c.x, (s32)c.y, (s32)ceil(v.x), (s32)ceil(v.y));
 
-    owl_color(screen, owl_rgb(0xff, 0, 0));
-    owl_pixel(screen, 10, 10);
-    owl_pixels(screen, points, 4);
+    owl_color(owl_rgb(0xff, 0, 0));
+    owl_pixel(10, 10);
+    owl_pixels(points, 4);
 
-    owl_color(screen, owl_rgb(0, 0xff, 0));
-    owl_line(screen, 100, 20, 150, 20);
-    owl_lines(screen, lines, 4);
+    owl_color(owl_rgb(0, 0xff, 0));
+    owl_line(100, 20, 150, 20);
+    owl_lines(lines, 4);
 
-    owl_color(screen, owl_rgb(255, 174, 201));
-    owl_rect(screen, rect.x, rect.y, rect.w, rect.h);
-    owl_fillrect(screen, rects[0].x, rects[0].y, rects[0].w, rects[0].h);
-    owl_fillrect(screen, rects[1].x, rects[1].y, rects[1].w, rects[1].h);
+    owl_color(owl_rgb(255, 174, 201));
+    owl_rect(rect.x, rect.y, rect.w, rect.h);
+    owl_fillrect(rects[0].x, rects[0].y, rects[0].w, rects[0].h);
+    owl_fillrect(rects[1].x, rects[1].y, rects[1].w, rects[1].h);
 
-    owl_color(screen, owl_rgba(0, 0xff, 0, 0x5f));
-    owl_fillrect(screen, rects1[0].x, rects1[0].y, rects1[0].w, rects1[0].h);
-    owl_fillrect(screen, rects1[1].x, rects1[1].y, rects1[1].w, rects1[1].h);
+    owl_color(owl_rgba(0, 0xff, 0, 0x5f));
+    owl_fillrect(rects1[0].x, rects1[0].y, rects1[0].w, rects1[0].h);
+    owl_fillrect(rects1[1].x, rects1[1].y, rects1[1].w, rects1[1].h);
 
-    owl_blit(screen, hero, NULL, &hero_pos);
+    owl_blit(hero, NULL, &hero_pos, 0, NULL, 0);
 
-    if (owl_font("Unifont", 16)) {
-      owl_text(screen, text, 200, 20, owl_rgb(0xff, 0, 0));
+    owl_blit(text1, NULL, &text1_pos, 0, NULL, 0);
 
-      owl_clip(screen, &clip_text);
-      owl_text(screen, text, clip_text.x, clip_text.y, owl_rgb(0, 0xff, 0xff));
-      owl_clip(screen, NULL);
+    owl_clip(&clip_text);
+    owl_blit(text2, NULL, &text2_pos, 0, NULL, 0);
+    owl_clip(NULL);
 
-      owl_color(morph, owl_rgb(128, 128, 128));
-      owl_clear(morph);
-      owl_text(morph, text, 15, 20, owl_rgb(0xff, 0xff, 0));
+    owl_target(morph);
+    owl_color(owl_rgb(128, 128, 128));
+    owl_clear();
+    owl_blit(text3, NULL, &text3_pos, 0, NULL, 0);
 
-      owl_blendmode(morph, OWL_BLEND_NONE);
-      owl_color(morph, owl_rgba(0, 0, 0, 0));
-      owl_fillrect(morph, 50, 50, 50, 50);
-      owl_blendmode(morph, OWL_BLEND_ALPHA);
+    owl_blendmode(morph, OWL_BLEND_NONE);
+    owl_color(owl_rgba(0, 0, 0, 0));
+    owl_fillrect(50, 50, 50, 50);
+    owl_blendmode(morph, OWL_BLEND_ALPHA);
 
-      owl_blit(screen, morph, NULL, &morph_pos);
-    }
+    owl_target(NULL);
+    owl_blit(morph, NULL, &morph_pos, 0, NULL, 0);
 
-    owl_fillrect(screen, 600, 450, 100, 50);
-    owl_fillellipse(screen, 450, 450, 100, 50);
+    owl_color(owl_rgba(0, 0xff, 0, 0x5f));
+    owl_fillrect(600, 450, 100, 50);
+    owl_fillellipse(450, 450, 100, 50);
 
     owl_blendmode(screen, OWL_BLEND_NONE);
-    owl_color(screen, owl_rgba(0, 0, 0, 0));
-    owl_fillellipse(screen, 450, 450, 90, 40);
+    owl_color(owl_rgba(0, 0, 0, 0));
+    owl_fillellipse(450, 450, 90, 40);
     owl_blendmode(screen, OWL_BLEND_ALPHA);
 
     owl_present();

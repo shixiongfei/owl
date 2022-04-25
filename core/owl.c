@@ -24,13 +24,23 @@ typedef struct owl_Window {
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *texture;
-  SDL_Surface *surface;
+  owl_Canvas *target;
   owl_FrameRate fps;
   s32 width, height;
 } owl_Window;
 
 static owl_Window owl_app = {0};
 static owl_Window *app = &owl_app;
+
+owl_Pixel owl_rgb(u8 r, u8 g, u8 b) {
+  owl_Pixel p = {r, g, b, 0xFF};
+  return p;
+}
+
+owl_Pixel owl_rgba(u8 r, u8 g, u8 b, u8 a) {
+  owl_Pixel p = {r, g, b, a};
+  return p;
+}
 
 const char *owl_version(s32 *major, s32 *minor, s32 *patch) {
   static char owlver[] = {OWL_RELEASE};
@@ -53,6 +63,44 @@ u64 owl_ticks(void) {
 }
 
 void owl_sleep(u32 ms) { SDL_Delay(ms); }
+
+static SDL_Surface *owl_surface(const u8 *data, s32 w, s32 h, u8 format) {
+  s32 d = format * 8;
+  s32 p = format * w;
+  s32 f = (format == OWL_FORMAT_RGB) ? SDL_PIXELFORMAT_RGB24
+                                     : SDL_PIXELFORMAT_RGBA32;
+  SDL_Surface *surface;
+
+  if (!data)
+    return NULL;
+
+  surface = SDL_CreateRGBSurfaceWithFormatFrom((void *)data, w, h, d, p, f);
+
+  if (!surface)
+    return NULL;
+
+  if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
+    SDL_Surface *origin = surface;
+
+    surface = SDL_ConvertSurfaceFormat(origin, SDL_PIXELFORMAT_RGBA32, 0);
+    SDL_FreeSurface(origin);
+  }
+  return surface;
+}
+
+static owl_Canvas *owl_surface_totexture(SDL_Surface *surface) {
+  owl_Canvas *canvas = SDL_CreateTextureFromSurface(app->renderer, surface);
+
+  if (!canvas)
+    return NULL;
+
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+  return canvas;
+}
+
+owl_Canvas *owl_texture(s32 access, s32 w, s32 h) {
+  return SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32, access, w, h);
+}
 
 bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
   s32 x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
@@ -79,21 +127,18 @@ bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
   if (!app->renderer)
     goto error;
 
-  app->texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_RGBA32,
-                                   SDL_TEXTUREACCESS_STREAMING, width, height);
+  app->texture = owl_texture(SDL_TEXTUREACCESS_TARGET, width, height);
+
   if (!app->texture)
     goto error;
 
-  app->surface = SDL_CreateRGBSurfaceWithFormatFrom(NULL, width, height, 32, 0,
-                                                    SDL_PIXELFORMAT_RGBA32);
-  if (!app->surface)
-    goto error;
+  SDL_SetTextureBlendMode(app->texture, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderTarget(app->renderer, app->texture);
 
-  SDL_LockTexture(app->texture, NULL, &app->surface->pixels,
-                  &app->surface->pitch);
-  SDL_SetSurfaceRLE(app->surface, SDL_TRUE);
+  SDL_SetRenderDrawBlendMode(app->renderer, SDL_BLENDMODE_BLEND);
   SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 0);
 
+  app->target = app->texture;
   app->width = width;
   app->height = height;
 
@@ -115,13 +160,7 @@ void owl_quit(void) {
   owl_soundquit();
   owl_fontquit();
 
-  if (app->surface) {
-    SDL_FreeSurface(app->surface);
-    app->surface = NULL;
-  }
-
   if (app->texture) {
-    SDL_UnlockTexture(app->texture);
     SDL_DestroyTexture(app->texture);
     app->texture = NULL;
   }
@@ -145,15 +184,148 @@ u32 owl_getfps(void) { return app->fps.rate; }
 
 u32 owl_wait(void) { return owl_framerate_wait(&app->fps); }
 
-owl_Canvas *owl_screen(void) { return app->surface; }
+owl_Canvas *owl_screen(void) { return app->texture; }
+
+owl_Canvas *owl_canvas(s32 width, s32 height) {
+  owl_Canvas *canvas = owl_texture(SDL_TEXTUREACCESS_TARGET, width, height);
+
+  if (!canvas)
+    return NULL;
+
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+  return canvas;
+}
+
+owl_Canvas *owl_image(const u8 *data, s32 w, s32 h, u8 format) {
+  SDL_Surface *surface = owl_surface(data, w, h, format);
+
+  if (!surface)
+    return NULL;
+
+  return owl_surface_totexture(surface);
+}
+
+owl_Canvas *owl_imagex(const u8 *data, s32 w, s32 h, owl_Pixel colorkey) {
+  SDL_Surface *surface = owl_surface(data, w, h, OWL_FORMAT_RGB);
+  u32 key;
+
+  if (!surface)
+    return NULL;
+
+  key = SDL_MapRGB(surface->format, colorkey.r, colorkey.g, colorkey.b);
+  SDL_SetColorKey(surface, SDL_TRUE, key);
+
+  return owl_surface_totexture(surface);
+}
+
+void owl_freecanvas(owl_Canvas *canvas) {
+  if (canvas == app->texture)
+    return;
+
+  if (canvas == app->target)
+    owl_target(app->texture);
+
+  if (canvas)
+    SDL_DestroyTexture(canvas);
+}
+
+void owl_size(owl_Canvas *canvas, s32 *w, s32 *h) {
+  SDL_QueryTexture(canvas, NULL, NULL, w, h);
+}
+
+static void owl_setblendmode(owl_Canvas *canvas) {
+  SDL_BlendMode blendmode;
+
+  if (0 == SDL_GetTextureBlendMode(canvas, &blendmode))
+    SDL_SetRenderDrawBlendMode(app->renderer, blendmode);
+}
+
+void owl_blendmode(owl_Canvas *canvas, s32 mode) {
+  switch (mode) {
+  case OWL_BLEND_ALPHA:
+    SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
+    break;
+  case OWL_BLEND_NONE:
+  default:
+    SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_NONE);
+    break;
+  }
+
+  if (app->target == canvas)
+    owl_setblendmode(canvas);
+}
+
+void owl_target(owl_Canvas *canvas) {
+  if (!canvas)
+    canvas = app->texture;
+
+  if (app->target != canvas) {
+    app->target = canvas;
+    SDL_SetRenderTarget(app->renderer, canvas);
+    owl_setblendmode(canvas);
+  }
+}
+
+void owl_color(owl_Pixel color) {
+  SDL_SetRenderDrawColor(app->renderer, color.r, color.g, color.b, color.a);
+}
+
+void owl_clear(void) { SDL_RenderClear(app->renderer); }
+
+void owl_fill(s32 x, s32 y, s32 w, s32 h) {
+  SDL_Rect rect = {x, y, w, h};
+  SDL_RenderFillRect(app->renderer, &rect);
+}
+
+void owl_pixel(s32 x, s32 y) { SDL_RenderDrawPoint(app->renderer, x, y); }
+
+void owl_pixels(const owl_Point *points, s32 n) {
+  SDL_RenderDrawPoints(app->renderer, (const SDL_Point *)points, n);
+}
+
+void owl_line(s32 x1, s32 y1, s32 x2, s32 y2) {
+  SDL_RenderDrawLine(app->renderer, x1, y1, x2, y2);
+}
+
+void owl_lines(const owl_Point *points, s32 n) {
+  SDL_RenderDrawLines(app->renderer, (const SDL_Point *)points, n);
+}
+
+void owl_rect(s32 x, s32 y, s32 w, s32 h) {
+  SDL_Rect rect = {x, y, w, h};
+  SDL_RenderDrawRect(app->renderer, &rect);
+}
+
+void owl_rects(const owl_Rect *rects, s32 n) {
+  SDL_RenderDrawRects(app->renderer, (const SDL_Rect *)rects, n);
+}
+
+void owl_fillrect(s32 x, s32 y, s32 w, s32 h) {
+  SDL_Rect rect = {x, y, w, h};
+  SDL_RenderFillRect(app->renderer, &rect);
+}
+
+void owl_fillrects(const owl_Rect *rects, s32 n) {
+  SDL_RenderFillRects(app->renderer, (const SDL_Rect *)rects, n);
+}
+
+void owl_clip(const owl_Rect *rect) {
+  SDL_RenderSetClipRect(app->renderer, (const SDL_Rect *)rect);
+}
+
+void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
+              const owl_Rect *dstrect, f64 angle, const owl_Point *center,
+              u8 flip) {
+  SDL_RenderCopyEx(app->renderer, canvas, (const SDL_Rect *)srcrect,
+                   (const SDL_Rect *)dstrect, angle, (const SDL_Point *)center,
+                   flip);
+}
 
 void owl_present(void) {
-  SDL_UnlockTexture(app->texture);
-
-  SDL_RenderClear(app->renderer);
+  SDL_SetRenderTarget(app->renderer, NULL);
   SDL_RenderCopy(app->renderer, app->texture, NULL, NULL);
   SDL_RenderPresent(app->renderer);
 
-  SDL_LockTexture(app->texture, NULL, &app->surface->pixels,
-                  &app->surface->pitch);
+  app->target = NULL;
+  owl_target(app->texture);
 }

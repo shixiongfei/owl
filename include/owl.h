@@ -82,6 +82,10 @@
 #define OWL_BLEND_NONE 0
 #define OWL_BLEND_ALPHA 1
 
+#define OWL_FLIP_NONE 0
+#define OWL_FLIP_HORIZONTAL 1
+#define OWL_FLIP_VERTICAL 2
+
 #define OWL_AUDIO_U8 0
 #define OWL_AUDIO_S8 1
 #define OWL_AUDIO_U16 2
@@ -151,7 +155,7 @@ typedef struct owl_Matrix {
 } owl_Matrix;
 
 typedef u32 owl_Audio;
-typedef struct SDL_Surface owl_Canvas;
+typedef struct SDL_Texture owl_Canvas;
 
 typedef struct owl_Event {
   u32 type;
@@ -374,31 +378,33 @@ OWL_API void owl_freecanvas(owl_Canvas *canvas);
 OWL_API void owl_size(owl_Canvas *canvas, s32 *w, s32 *h);
 OWL_API void owl_blendmode(owl_Canvas *canvas, s32 mode);
 
-OWL_API void owl_color(owl_Canvas *canvas, owl_Pixel color);
-OWL_API void owl_clear(owl_Canvas *canvas);
-OWL_API void owl_fill(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
+OWL_API void owl_target(owl_Canvas *canvas);
+OWL_API void owl_color(owl_Pixel color);
+OWL_API void owl_clear(void);
+OWL_API void owl_fill(s32 x, s32 y, s32 w, s32 h);
 
-OWL_API void owl_pixel(owl_Canvas *canvas, s32 x, s32 y);
-OWL_API void owl_pixels(owl_Canvas *canvas, const owl_Point *points, s32 n);
+OWL_API void owl_pixel(s32 x, s32 y);
+OWL_API void owl_pixels(const owl_Point *points, s32 n);
 
-OWL_API void owl_line(owl_Canvas *canvas, s32 x1, s32 y1, s32 x2, s32 y2);
-OWL_API void owl_lines(owl_Canvas *canvas, const owl_Point *points, s32 n);
+OWL_API void owl_line(s32 x1, s32 y1, s32 x2, s32 y2);
+OWL_API void owl_lines(const owl_Point *points, s32 n);
 
-OWL_API void owl_rect(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
-OWL_API void owl_fillrect(owl_Canvas *canvas, s32 x, s32 y, s32 w, s32 h);
+OWL_API void owl_rect(s32 x, s32 y, s32 w, s32 h);
+OWL_API void owl_rects(const owl_Rect *rects, s32 n);
 
-OWL_API void owl_ellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry);
-OWL_API void owl_fillellipse(owl_Canvas *canvas, s32 x, s32 y, s32 rx, s32 ry);
+OWL_API void owl_fillrect(s32 x, s32 y, s32 w, s32 h);
+OWL_API void owl_fillrects(const owl_Rect *rects, s32 n);
 
-OWL_API void owl_clip(owl_Canvas *canvas, const owl_Rect *rect);
-OWL_API void owl_blit(owl_Canvas *canvas, owl_Canvas *src,
-                      const owl_Rect *srcrect, const owl_Rect *dstrect);
+OWL_API void owl_clip(const owl_Rect *rect);
+OWL_API void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
+                      const owl_Rect *dstrect, f64 angle,
+                      const owl_Point *center, u8 flip);
 OWL_API void owl_present(void);
 
 OWL_API bool owl_loadfont(const char *name, const char *filename);
 OWL_API bool owl_font(const char *name, s32 size);
-OWL_API s32 owl_text(owl_Canvas *canvas, const char *text, s32 x, s32 y,
-                     owl_Pixel color);
+
+OWL_API owl_Canvas *owl_text(const char *text, owl_Pixel color);
 OWL_API s32 owl_textwidth(const char *text);
 
 OWL_API owl_Audio owl_audio(s32 freq, u8 format, u8 channels, u16 samples);
