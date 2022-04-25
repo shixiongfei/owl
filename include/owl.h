@@ -342,6 +342,7 @@ OWL_API void owl_matrix_apply(owl_Matrix *m, owl_Vector2 *out, f64 x, f64 y);
 
 OWL_API const char *owl_version(s32 *major, s32 *minor, s32 *patch);
 
+OWL_API f64 owl_time(u64 *sec, u32 *usec);
 OWL_API u64 owl_ticks(void);
 OWL_API void owl_sleep(u32 ms);
 
