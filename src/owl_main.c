@@ -103,6 +103,7 @@ static int owl_main(int argc, char *argv[]) {
   const u8 *kbd;
   owl_Matrix m;
   owl_Vector2 c = {80, 80}, v = {130, 80};
+  owl_Vertex vert[3] = {0};
 
   owl_matrix_settransrotate(&m, c.x, c.y, owl_radians(1.0f));
 
@@ -155,11 +156,36 @@ static int owl_main(int argc, char *argv[]) {
     text3_pos.h = (f32)h;
   }
 
+  // center
+  vert[0].position.x = 300;
+  vert[0].position.y = 100;
+  vert[0].color.r = 255;
+  vert[0].color.g = 0;
+  vert[0].color.b = 0;
+  vert[0].color.a = 255;
+
+  // left
+  vert[1].position.x = 100;
+  vert[1].position.y = 400;
+  vert[1].color.r = 0;
+  vert[1].color.g = 0;
+  vert[1].color.b = 255;
+  vert[1].color.a = 255;
+
+  // right
+  vert[2].position.x = 500;
+  vert[2].position.y = 400;
+  vert[2].color.r = 0;
+  vert[2].color.g = 255;
+  vert[2].color.b = 0;
+  vert[2].color.a = 255;
+
   while (!quit) {
     owl_color(owl_rgb(0, 0, 0));
     owl_clear();
 
     owl_color(owl_rgb(0xff, 0, 0xff));
+    owl_geometry(NULL, vert, 3, NULL, 0);
 
     while (owl_event(&event)) {
       switch (event.type) {

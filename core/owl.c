@@ -111,6 +111,8 @@ bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
   SDL_DisableScreenSaver();
 
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+  SDL_SetHint(SDL_HINT_RENDER_BATCHING, "1");
+  SDL_SetHint(SDL_HINT_RENDER_LINE_METHOD, "3");
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
   SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, "1");
 
@@ -302,6 +304,18 @@ void owl_fillrect(f32 x, f32 y, f32 w, f32 h) {
 
 void owl_fillrects(const owl_Rect *rects, s32 n) {
   SDL_RenderFillRectsF(app->renderer, (const SDL_FRect *)rects, n);
+}
+
+void owl_geometry(owl_Canvas *texture, const owl_Vertex *vertices,
+                  s32 num_vertices, const s32 *indices, s32 num_indices) {
+  const f32 *xy = (const f32 *)&vertices->position;
+  const SDL_Color *color = (const SDL_Color *)&vertices->color;
+  const f32 *uv = (const f32 *)&vertices->uv;
+
+  SDL_RenderGeometryRaw(app->renderer, texture, xy, (s32)sizeof(owl_Vertex),
+                        color, (s32)sizeof(owl_Vertex), uv,
+                        (s32)sizeof(owl_Vertex), num_vertices, indices,
+                        num_indices, sizeof(s32));
 }
 
 void owl_clip(const owl_Rect *rect) {

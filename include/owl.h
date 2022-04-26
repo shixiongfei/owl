@@ -144,6 +144,12 @@ typedef struct owl_Rect {
   f32 w, h;
 } owl_Rect;
 
+typedef struct owl_Vertex {
+  owl_Point position;
+  owl_Pixel color;
+  owl_Point uv;
+} owl_Vertex;
+
 typedef struct owl_Vector2 {
   f64 x, y;
 } owl_Vector2;
@@ -394,6 +400,9 @@ OWL_API void owl_rects(const owl_Rect *rects, s32 n);
 OWL_API void owl_fillrect(f32 x, f32 y, f32 w, f32 h);
 OWL_API void owl_fillrects(const owl_Rect *rects, s32 n);
 
+OWL_API void owl_geometry(owl_Canvas *texture, const owl_Vertex *vertices,
+                          s32 num_vertices, const s32 *indices,
+                          s32 num_indices);
 OWL_API void owl_clip(const owl_Rect *rect);
 OWL_API void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
                       const owl_Rect *dstrect, f64 angle,
