@@ -252,11 +252,17 @@ workspace ( "owl" )
       links { "OpenGL32" }
 
     filter ( "action:gmake" )
-      warnings  "Default" --"Extra"
+      warnings  "Off" --"Extra"
       linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
 
     filter { "action:gmake", "system:macosx" }
-      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
+      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh",
+                "SDL_GPU_DISABLE_GLES" }
+      links { "OpenGL.framework" }
+
+    -- TODO: IOS make
+    filter { "action:gmake", "system:ios" }
+      defines { "__APPLE__", "__IOS__", "SDL_GPU_DISABLE_OPENGL" }
 
 
   -- A project defines one build target
