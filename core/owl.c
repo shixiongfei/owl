@@ -112,7 +112,6 @@ bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
 
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
   SDL_SetHint(SDL_HINT_RENDER_BATCHING, "1");
-  SDL_SetHint(SDL_HINT_RENDER_LINE_METHOD, "3");
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
   SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, "1");
 

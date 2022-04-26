@@ -195,7 +195,7 @@ bool owl_font(const char *name, s32 size) {
 }
 
 owl_Canvas *owl_text(const char *text, owl_Pixel color) {
-  f32 alpha = (f32)color.a / 0xFF;
+  f32 alpha = (f32)color.a / 255.0f;
   owl_Canvas *canvas;
   u8 *bitmap;
   u32 *pixels;
