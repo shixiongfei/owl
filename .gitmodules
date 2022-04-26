@@ -13,3 +13,6 @@
 [submodule "3rd/actor"]
 	path = 3rd/actor
 	url = https://github.com/shixiongfei/actor.git
+[submodule "3rd/sdl-gpu"]
+	path = 3rd/sdl-gpu
+	url = https://github.com/grimfang4/sdl-gpu.git
