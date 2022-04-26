@@ -31,6 +31,9 @@ workspace ( "owl" )
     os.remove("SDL2main.vcxproj")
     os.remove("SDL2main.vcxproj.filters")
     os.remove("SDL2main.vcxproj.user")
+    os.remove("SDL_gpu.vcxproj")
+    os.remove("SDL_gpu.vcxproj.filters")
+    os.remove("SDL_gpu.vcxproj.user")
     os.remove("owlcore.vcxproj")
     os.remove("owlcore.vcxproj.filters")
     os.remove("owlcore.vcxproj.user")
@@ -42,6 +45,7 @@ workspace ( "owl" )
     os.remove("owl.vcxproj.user")
     os.remove("SDL2.make")
     os.remove("SDL2main.make")
+    os.remove("SDL_gpu.make")
     os.remove("owlcore.make")
     os.remove("owlvm.make")
     os.remove("owl.make")
@@ -104,9 +108,8 @@ workspace ( "owl" )
       defines { "DEBUG", "_DEBUG" }
 
     filter ( "action:vs*" )
-      defines { "WIN32", "_WIN32", "_WINDOWS",
-                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
-                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      defines { "WIN32", "_WIN32", "_WINDOWS", "_CRT_SECURE_NO_WARNINGS",
+                "_CRT_SECURE_NO_DEPRECATE", "_CRT_NONSTDC_NO_DEPRECATE" }
       files { "./3rd/sdl2/src/audio/directsound/*.h", "./3rd/sdl2/src/audio/directsound/*.c",
               "./3rd/sdl2/src/audio/disk/*.h", "./3rd/sdl2/src/audio/disk/*.c",
               "./3rd/sdl2/src/audio/wasapi/*.h", "./3rd/sdl2/src/audio/wasapi/*.c",
@@ -199,9 +202,8 @@ workspace ( "owl" )
       defines { "DEBUG", "_DEBUG" }
 
     filter ( "action:vs*" )
-      defines { "WIN32", "_WIN32", "_WINDOWS",
-                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
-                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      defines { "WIN32", "_WIN32", "_WINDOWS", "_CRT_SECURE_NO_WARNINGS",
+                "_CRT_SECURE_NO_DEPRECATE", "_CRT_NONSTDC_NO_DEPRECATE" }
       files { "./3rd/sdl2/src/main/windows/*.h",
               "./3rd/sdl2/src/main/windows/*.c" }
 
@@ -209,6 +211,49 @@ workspace ( "owl" )
       warnings  "Default" --"Extra"
       files { "./3rd/sdl2/src/main/dummy/*.h",
               "./3rd/sdl2/src/main/dummy/*.c" }
+
+    filter { "action:gmake", "system:macosx" }
+      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
+
+
+  -- A project defines one build target
+  project ( "SDL_gpu" )
+    kind ( "SharedLib" )
+    language ( "C" )
+    files { "./3rd/sdl-gpu/include/*.h", "./3rd/sdl-gpu/src/*.c",
+            "./3rd/sdl-gpu/src/externals/glew/**.h", "./3rd/sdl-gpu/src/externals/glew/**.c",
+            "./3rd/sdl-gpu/src/externals/stb_image/*.h", "./3rd/sdl-gpu/src/externals/stb_image/*.c",
+            "./3rd/sdl-gpu/src/externals/stb_image_write/*.h", "./3rd/sdl-gpu/src/externals/stb_image_write/*.c" }
+    includedirs { "./3rd/sdl2/include", "./3rd/sdl-gpu/include",
+                  "./3rd/sdl-gpu/src/externals/gl3stub",
+                  "./3rd/sdl-gpu/src/externals/glew/GL",
+                  "./3rd/sdl-gpu/src/externals/stb_image",
+                  "./3rd/sdl-gpu/src/externals/stb_image_write"}
+    libdirs { "./bin" }
+    objdir ( "./objs" )
+    targetdir ( "./bin" )
+    links { "SDL2" }
+    defines { "_UNICODE", "DLL_EXPORT", "GLEW_STATIC", "STBI_FAILURE_USERMSG" }
+    staticruntime "On"
+
+    filter ( "configurations:Release" )
+      optimize "On"
+      defines { "NDEBUG", "_NDEBUG" }
+
+    filter ( "configurations:Debug" )
+      symbols "On"
+      defines { "DEBUG", "_DEBUG" }
+
+    filter ( "action:vs*" )
+      defines { "WIN32", "_WIN32", "_WINDOWS", "_CRT_SECURE_NO_WARNINGS",
+                "_CRT_SECURE_NO_DEPRECATE", "_CRT_NONSTDC_NO_DEPRECATE",
+                "SDL_GPU_DISABLE_GLES" }
+      warnings "Off"
+      links { "OpenGL32" }
+
+    filter ( "action:gmake" )
+      warnings  "Default" --"Extra"
+      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
 
     filter { "action:gmake", "system:macosx" }
       defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
@@ -229,7 +274,7 @@ workspace ( "owl" )
     objdir ( "./objs" )
     targetdir ( "./bin" )
     targetname ( "OwlCore" )
-    links { "SDL2" }
+    links { "SDL2", "SDL_gpu" }
     defines { "_UNICODE", "OWL_BUILD_DLL" }
     staticruntime "On"
 
@@ -242,9 +287,8 @@ workspace ( "owl" )
       defines { "DEBUG", "_DEBUG" }
 
     filter ( "action:vs*" )
-      defines { "WIN32", "_WIN32", "_WINDOWS",
-                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
-                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      defines { "WIN32", "_WIN32", "_WINDOWS", "_CRT_SECURE_NO_WARNINGS",
+                "_CRT_SECURE_NO_DEPRECATE", "_CRT_NONSTDC_NO_DEPRECATE" }
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
@@ -281,9 +325,8 @@ workspace ( "owl" )
       defines { "DEBUG", "_DEBUG" }
 
     filter ( "action:vs*" )
-      defines { "WIN32", "_WIN32", "_WINDOWS",
-                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
-                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      defines { "WIN32", "_WIN32", "_WINDOWS", "_CRT_SECURE_NO_WARNINGS",
+                "_CRT_SECURE_NO_DEPRECATE", "_CRT_NONSTDC_NO_DEPRECATE" }
 
     filter ( "action:gmake" )
       warnings  "Default" --"Extra"
@@ -321,9 +364,8 @@ workspace ( "owl" )
       defines { "DEBUG", "_DEBUG" }
 
     filter ( "action:vs*" )
-      defines { "WIN32", "_WIN32", "_WINDOWS",
-                "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE",
-                "_CRT_NONSTDC_NO_DEPRECATE", "_WINSOCK_DEPRECATED_NO_WARNINGS" }
+      defines { "WIN32", "_WIN32", "_WINDOWS", "_CRT_SECURE_NO_WARNINGS",
+                "_CRT_SECURE_NO_DEPRECATE", "_CRT_NONSTDC_NO_DEPRECATE" }
       links { "Ws2_32", "IPHLPAPI", "SDL2" }
 
     filter ( "action:gmake" )
