@@ -27,76 +27,23 @@ typedef struct Args {
   char **argv;
 } Args;
 
-static void owl_fillellipse(f32 x, f32 y, f32 rx, f32 ry) {
-  f32 dx, dy, d1, d2, rx2, ry2, offx, offy;
-
-  offx = 0;
-  offy = ry;
-
-  rx2 = rx * rx;
-  ry2 = ry * ry;
-
-  d1 = ry2 - (rx2 * ry) + 0.25f * rx2;
-  dx = 2 * ry2 * offx;
-  dy = 2 * rx2 * offy;
-
-  while (dx < dy) {
-    if (d1 < 0) {
-      offx++;
-      dx += ry2 * 2.0f;
-      d1 += dx + ry2;
-    } else {
-      owl_line(x - offx, y + offy, x + offx, y + offy);
-      owl_line(x - offx, y - offy, x + offx, y - offy);
-
-      offx++;
-      offy--;
-      dx += ry2 * 2.0f;
-      dy -= rx2 * 2.0f;
-      d1 += dx - dy + ry2;
-    }
-  }
-
-  d2 = (ry2 * (offx + 0.5f) * (offx + 0.5f)) +
-       (rx2 * ((offy - 1.0f) * (offy - 1.0f))) - (rx2 * ry2);
-
-  while (offy > 0) {
-    owl_line(x - offx, y + offy, x + offx, y + offy);
-    owl_line(x - offx, y - offy, x + offx, y - offy);
-
-    if (d2 > 0) {
-      offy--;
-      dy -= rx2 * 2.0f;
-      d2 += rx2 - dy;
-    } else {
-      offy--;
-      offx++;
-      dx += ry2 * 2.0f;
-      dy -= rx2 * 2.0f;
-      d2 += dx - dy + rx2;
-    }
-  }
-
-  owl_line(x - rx, y, x + rx, y);
-}
-
 static int owl_main(int argc, char *argv[]) {
   bool quit = false;
   char title[128];
   owl_Event event;
   owl_Canvas *screen, *hero, *morph, *text1, *text2, *text3;
-  owl_Point points[4] = {{13, 13}, {13, 15}, {15, 13}, {15, 15}};
-  owl_Point lines[4] = {{320, 200}, {300, 240}, {340, 240}, {320, 200}};
+  owl_Point points[] = {{13, 13}, {13, 15}, {15, 13}, {15, 15}};
+  owl_Point lines[] = {{320, 200}, {300, 240}, {340, 240}};
   owl_Rect rect = {150, 150, 500, 50};
-  owl_Rect rects[2] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
-  owl_Rect rects1[2] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
+  owl_Rect rects[] = {{200, 220, 100, 50}, {200, 300, 100, 50}};
+  owl_Rect rects1[] = {{215, 235, 100, 50}, {215, 315, 100, 50}};
   owl_Rect hero_pos, clip_text = {200, 50, 110, 12};
   owl_Rect text1_pos = {200, 20, -1, -1};
   owl_Rect text2_pos = {clip_text.x, clip_text.y, -1, -1};
   owl_Rect text3_pos = {15, 20, -1, -1};
   owl_Rect morph_pos = {550, 10, 200, 200};
-  s32 w, h;
-  f64 angle = 0.0;
+  s32 i, w, h;
+  f32 angle = 0.0f;
   const char *text = "中英文abc混合ABC测试!";
   const s32 SCREEN_W = 800;
   const s32 SCREEN_H = 600;
@@ -180,6 +127,8 @@ static int owl_main(int argc, char *argv[]) {
   vert[2].color.b = 0;
   vert[2].color.a = 255;
 
+  owl_thickness(2.0f);
+
   while (!quit) {
     owl_color(owl_rgb(0, 0, 0));
     owl_clear();
@@ -224,11 +173,18 @@ static int owl_main(int argc, char *argv[]) {
 
     owl_color(owl_rgb(0xff, 0, 0));
     owl_pixel(10, 10);
-    owl_pixels(points, 4);
+
+    for (i = 0; i < 4; ++i)
+      owl_pixel(points[i].x, points[i].y);
 
     owl_color(owl_rgb(0, 0xff, 0));
     owl_line(100, 20, 150, 20);
-    owl_lines(lines, 4);
+
+    owl_color(owl_rgb(0xff, 0xff, 0));
+    owl_fillpolygon(lines, 3);
+
+    owl_color(owl_rgb(0xff, 0, 0xff));
+    owl_polygon(lines, 3, true);
 
     owl_color(owl_rgb(255, 174, 201));
     owl_rect(rect.x, rect.y, rect.w, rect.h);
@@ -241,10 +197,10 @@ static int owl_main(int argc, char *argv[]) {
 
     owl_blit(hero, NULL, &hero_pos, angle, NULL, 0);
 
-    angle += 1.0;
+    angle += 1.0f;
 
-    if (angle >= 360.0)
-      angle -= 360.0;
+    if (angle >= 360.0f)
+      angle -= 360.0f;
 
     owl_blit(text1, NULL, &text1_pos, 0, NULL, 0);
 
@@ -267,11 +223,11 @@ static int owl_main(int argc, char *argv[]) {
 
     owl_color(owl_rgba(0, 0xff, 0, 0x5f));
     owl_fillrect(600, 450, 100, 50);
-    owl_fillellipse(450, 450, 100, 50);
+    owl_fillellipse(450, 450, 100, 50, 0.0f);
 
     owl_blendmode(screen, OWL_BLEND_NONE);
     owl_color(owl_rgba(0, 0, 0, 0));
-    owl_fillellipse(450, 450, 90, 40);
+    owl_fillellipse(450, 450, 90, 40, 0.0f);
     owl_blendmode(screen, OWL_BLEND_ALPHA);
 
     owl_present();

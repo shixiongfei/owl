@@ -9,7 +9,7 @@
  * Usage of Owl is subject to the appropriate license agreement.
  */
 
-#include "SDL.h"
+#include "SDL_gpu.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -17,7 +17,6 @@
 #include "utf8.h"
 
 #include "owl_font.h"
-#include "owl_canvas.h"
 #include "owl_io.h"
 #include "owl_table.h"
 
@@ -196,6 +195,7 @@ bool owl_font(const char *name, s32 size) {
 
 owl_Canvas *owl_text(const char *text, owl_Pixel color) {
   f32 alpha = (f32)color.a / 255.0f;
+  SDL_Surface *surface;
   owl_Canvas *canvas;
   u8 *bitmap;
   u32 *pixels;
@@ -209,30 +209,30 @@ owl_Canvas *owl_text(const char *text, owl_Pixel color) {
   if (!bitmap)
     return NULL;
 
-  pixels = (u32 *)calloc(w * h, format->BytesPerPixel);
+  surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
 
-  if (!pixels) {
+  if (!surface) {
     free(bitmap);
     return NULL;
   }
 
-  canvas = owl_texture(SDL_TEXTUREACCESS_STATIC, w, h);
+  if (SDL_MUSTLOCK(surface))
+    SDL_LockSurface(surface);
 
-  if (!canvas) {
-    free(bitmap);
-    free(pixels);
-    return NULL;
-  }
+  pixels = (u32 *)surface->pixels;
 
   for (i = 0; i < w * h; ++i) {
     u8 a = (u8)ceilf(alpha * bitmap[i]);
     pixels[i] = SDL_MapRGBA(format, color.r, color.g, color.b, a);
   }
-  SDL_UpdateTexture(canvas, NULL, pixels, w * format->BytesPerPixel);
-  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND);
 
+  if (SDL_MUSTLOCK(surface))
+    SDL_UnlockSurface(surface);
+
+  canvas = GPU_CopyImageFromSurface(surface);
+
+  SDL_FreeSurface(surface);
   free(bitmap);
-  free(pixels);
 
   return canvas;
 }

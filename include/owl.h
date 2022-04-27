@@ -146,8 +146,8 @@ typedef struct owl_Rect {
 
 typedef struct owl_Vertex {
   owl_Point position;
-  owl_Pixel color;
   owl_Point uv;
+  owl_Pixel color;
 } owl_Vertex;
 
 typedef struct owl_Vector2 {
@@ -161,7 +161,7 @@ typedef struct owl_Matrix {
 } owl_Matrix;
 
 typedef u32 owl_Audio;
-typedef struct SDL_Texture owl_Canvas;
+typedef struct GPU_Image owl_Canvas;
 
 typedef struct owl_Event {
   u32 type;
@@ -385,27 +385,46 @@ OWL_API void owl_size(owl_Canvas *canvas, s32 *w, s32 *h);
 OWL_API void owl_blendmode(owl_Canvas *canvas, s32 mode);
 
 OWL_API void owl_target(owl_Canvas *canvas);
+OWL_API void owl_thickness(f32 thickness);
 OWL_API void owl_color(owl_Pixel color);
 OWL_API void owl_clear(void);
 
 OWL_API void owl_pixel(f32 x, f32 y);
-OWL_API void owl_pixels(const owl_Point *points, s32 n);
-
 OWL_API void owl_line(f32 x1, f32 y1, f32 x2, f32 y2);
-OWL_API void owl_lines(const owl_Point *points, s32 n);
 
 OWL_API void owl_rect(f32 x, f32 y, f32 w, f32 h);
-OWL_API void owl_rects(const owl_Rect *rects, s32 n);
-
 OWL_API void owl_fillrect(f32 x, f32 y, f32 w, f32 h);
-OWL_API void owl_fillrects(const owl_Rect *rects, s32 n);
+
+OWL_API void owl_arc(f32 x, f32 y, f32 radius, f32 start_angle, f32 end_angle);
+OWL_API void owl_fillarc(f32 x, f32 y, f32 radius, f32 start_angle,
+                         f32 end_angle);
+
+OWL_API void owl_circle(f32 x, f32 y, f32 radius);
+OWL_API void owl_fillcircle(f32 x, f32 y, f32 radius);
+
+OWL_API void owl_ellipse(f32 x, f32 y, f32 rx, f32 ry, f32 degrees);
+OWL_API void owl_fillellipse(f32 x, f32 y, f32 rx, f32 ry, f32 degrees);
+
+OWL_API void owl_sector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
+                        f32 start_angle, f32 end_angle);
+OWL_API void owl_fillsector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
+                            f32 start_angle, f32 end_angle);
+
+OWL_API void owl_tri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3);
+OWL_API void owl_filltri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3);
+
+OWL_API void owl_rectround(f32 x, f32 y, f32 w, f32 h, f32 radius);
+OWL_API void owl_fillrectround(f32 x, f32 y, f32 w, f32 h, f32 radius);
+
+OWL_API void owl_polygon(const owl_Point *points, s32 num_points, bool close);
+OWL_API void owl_fillpolygon(const owl_Point *points, s32 num_points);
 
 OWL_API void owl_geometry(owl_Canvas *texture, const owl_Vertex *vertices,
-                          s32 num_vertices, const s32 *indices,
+                          s32 num_vertices, const u16 *indices,
                           s32 num_indices);
 OWL_API void owl_clip(const owl_Rect *rect);
 OWL_API void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
-                      const owl_Rect *dstrect, f64 angle,
+                      const owl_Rect *dstrect, f32 degrees,
                       const owl_Point *center, u8 flip);
 OWL_API void owl_present(void);
 

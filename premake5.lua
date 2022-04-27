@@ -275,6 +275,7 @@ workspace ( "owl" )
             "./3rd/miniz/*.h", "./3rd/miniz/*.c" }
     includedirs { "./include", "./3rd",
                   "./3rd/sdl2/include",
+                  "./3rd/sdl-gpu/include",
                   "./3rd/utf8" }
     libdirs { "./bin" }
     objdir ( "./objs" )
