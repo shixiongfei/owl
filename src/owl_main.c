@@ -51,7 +51,10 @@ static int owl_main(int argc, char *argv[]) {
   owl_Matrix m;
   owl_Vector2 c = {80, 80}, v = {130, 80};
   owl_Vertex vert[4] = {0};
-  u16 indices[] = {0, 1, 2, 1, 2, 3};
+  u16 indices[] = {
+      0, 1, 2, // 第一个三角面
+      1, 2, 3  // 第二个三角面
+  };
 
   owl_matrixSetTransRotate(&m, c.x, c.y, owl_radians(1.0f));
 
