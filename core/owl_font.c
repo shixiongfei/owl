@@ -36,8 +36,8 @@ static owl_Table *ttfs = NULL;
 static owl_Font font = {0};
 static SDL_PixelFormat *format = NULL;
 
-static owl_TrueType *owl_loadttf(const char *filename) {
-  u8 *data = owl_readfile(filename);
+static owl_TrueType *owl_loadTTF(const char *filename) {
+  u8 *data = owl_readFile(filename);
   owl_TrueType *ttf;
   s32 offset;
 
@@ -61,12 +61,12 @@ static owl_TrueType *owl_loadttf(const char *filename) {
   return ttf;
 }
 
-static void owl_freettf(owl_TrueType *ttf) {
+static void owl_freeTTF(owl_TrueType *ttf) {
   free(ttf->data);
   free(ttf);
 }
 
-static f32 owl_fontwide(owl_Font *font, ucs4_t ch, ucs4_t last) {
+static f32 owl_fontWide(owl_Font *font, ucs4_t ch, ucs4_t last) {
   s32 ax, lsb, kern = 0;
 
   stbtt_GetCodepointHMetrics(font->ttf, ch, &ax, &lsb);
@@ -77,20 +77,20 @@ static f32 owl_fontwide(owl_Font *font, ucs4_t ch, ucs4_t last) {
   return (ax + kern) * font->scale;
 }
 
-static f32 owl_fontwidth(owl_Font *font, const char *text) {
+static f32 owl_fontWidth(owl_Font *font, const char *text) {
   const char *p = text;
   f32 width = 0;
   ucs4_t ch, last = 0;
 
   while (*p) {
     p += utf8_tounicode(p, &ch);
-    width += owl_fontwide(font, ch, last);
+    width += owl_fontWide(font, ch, last);
     last = ch;
   }
   return width;
 }
 
-static u8 *owl_fontbitmap(owl_Font *font, const char *text, s32 *w, s32 *h) {
+static u8 *owl_fontBitmap(owl_Font *font, const char *text, s32 *w, s32 *h) {
   owl_TrueType *ttf = font->ttf;
   const char *p = text;
   ucs4_t ch, last = 0;
@@ -101,7 +101,7 @@ static u8 *owl_fontbitmap(owl_Font *font, const char *text, s32 *w, s32 *h) {
   if (!ttf)
     return NULL;
 
-  *w = (s32)owl_fontwidth(font, text);
+  *w = (s32)owl_fontWidth(font, text);
   *h = (s32)font->height;
 
   bitmap = (u8 *)calloc(1, *w * *h);
@@ -127,14 +127,14 @@ static u8 *owl_fontbitmap(owl_Font *font, const char *text, s32 *w, s32 *h) {
 
     stbtt_MakeCodepointBitmapSubpixel(ttf, pixels, *w - x, *h - y, *w,
                                       font->scale, font->scale, xfract, 0, ch);
-    xoff += owl_fontwide(font, ch, last);
+    xoff += owl_fontWide(font, ch, last);
     xfract = xoff - (int)xoff;
     last = ch;
   }
   return bitmap;
 }
 
-bool owl_fontinit(void) {
+bool owl_fontInit(void) {
   if (!ttfs)
     ttfs = owl_table();
 
@@ -142,21 +142,21 @@ bool owl_fontinit(void) {
   return ttfs != NULL;
 }
 
-void owl_fontquit(void) {
+void owl_fontQuit(void) {
   if (format) {
     SDL_FreeFormat(format);
     format = NULL;
   }
 
   if (ttfs) {
-    owl_freetable(ttfs, (owl_Dtor)owl_freettf);
+    owl_freeTable(ttfs, (owl_Dtor)owl_freeTTF);
     ttfs = NULL;
   }
   memset(&font, 0, sizeof(owl_Font));
 }
 
-bool owl_loadfont(const char *name, const char *filename) {
-  owl_TrueType *ttf = (owl_TrueType *)owl_gettable(ttfs, name);
+bool owl_loadFont(const char *name, const char *filename) {
+  owl_TrueType *ttf = (owl_TrueType *)owl_getTable(ttfs, name);
 
   if (ttf)
     return true;
@@ -164,17 +164,17 @@ bool owl_loadfont(const char *name, const char *filename) {
   if (!filename)
     return false;
 
-  ttf = owl_loadttf(filename);
+  ttf = owl_loadTTF(filename);
 
   if (!ttf)
     return false;
 
-  owl_settable(ttfs, name, ttf);
+  owl_setTable(ttfs, name, ttf);
   return true;
 }
 
 bool owl_font(const char *name, s32 size) {
-  owl_TrueType *ttf = (owl_TrueType *)owl_gettable(ttfs, name);
+  owl_TrueType *ttf = (owl_TrueType *)owl_getTable(ttfs, name);
   s32 ascent, descent, linegap;
 
   if (!ttf)
@@ -204,7 +204,7 @@ owl_Canvas *owl_text(const char *text, owl_Pixel color) {
   if (!text)
     return NULL;
 
-  bitmap = owl_fontbitmap(&font, text, &w, &h);
+  bitmap = owl_fontBitmap(&font, text, &w, &h);
 
   if (!bitmap)
     return NULL;
@@ -237,9 +237,9 @@ owl_Canvas *owl_text(const char *text, owl_Pixel color) {
   return canvas;
 }
 
-f32 owl_textwidth(const char *text) {
+f32 owl_textWidth(const char *text) {
   if (!text)
     return -1.0f;
 
-  return owl_fontwidth(&font, text);
+  return owl_fontWidth(&font, text);
 }

@@ -73,7 +73,7 @@ typedef struct owl_PathSlice {
   const char *end;
 } owl_PathSlice;
 
-s64 owl_filesize(const char *filename) {
+s64 owl_fileSize(const char *filename) {
   s64 size;
   int fp;
 
@@ -89,12 +89,12 @@ s64 owl_filesize(const char *filename) {
   return size;
 }
 
-u8 *owl_readfile(const char *filename) {
+u8 *owl_readFile(const char *filename) {
   FILE *fp;
   s64 size;
   u8 *data;
 
-  size = owl_filesize(filename);
+  size = owl_fileSize(filename);
 
   if (size < 0)
     return NULL;
@@ -118,7 +118,7 @@ u8 *owl_readfile(const char *filename) {
   return data;
 }
 
-int owl_tempfile(const char *filename) {
+int owl_tempFile(const char *filename) {
   int fd = -1;
 
   if (!filename)
@@ -131,7 +131,7 @@ int owl_tempfile(const char *filename) {
   return fd;
 }
 
-const char *owl_selfname(void) {
+const char *owl_selfName(void) {
   static char buffer[MAX_PATH] = {0};
 
   if (!buffer[0]) {
@@ -160,7 +160,7 @@ const char *owl_selfname(void) {
   return buffer;
 }
 
-OWL_INLINE bool owl_isseparator(char ch) {
+OWL_INLINE bool owl_isSeparator(char ch) {
   if (ch == '/')
     return true;
 
@@ -172,12 +172,85 @@ OWL_INLINE bool owl_isseparator(char ch) {
   return false;
 }
 
-char *owl_pathformat(char *path) {
+char *owl_dirName(char *outbuf, const char *path) {
+  const char *endp;
+  s32 len;
+
+  /* Empty or NULL string gets treated as "." */
+  if (path == NULL || *path == '\0') {
+    outbuf[0] = '.';
+    outbuf[1] = '\0';
+    return outbuf;
+  }
+
+  /* Strip trailing slashes */
+  endp = path + strlen(path) - 1;
+  while (endp > path && owl_isSeparator(*endp))
+    endp--;
+
+  /* Find the start of the dir */
+  while (endp > path && !owl_isSeparator(*endp))
+    endp--;
+
+  /* Either the dir is "/" or there are no slashes */
+  if (endp == path) {
+    outbuf[0] = owl_isSeparator(*endp) ? OWL_PATHSEP : '.';
+    outbuf[1] = '\0';
+    return outbuf;
+  } else {
+    do {
+      endp--;
+    } while (endp > path && owl_isSeparator(*endp));
+  }
+
+  len = (s32)(endp - path + 1);
+  strncpy(outbuf, path, len);
+  outbuf[len] = '\0';
+
+  return outbuf;
+}
+
+char *owl_baseName(char *outbuf, const char *path) {
+  const char *endp, *startp;
+  s32 len;
+
+  /* Empty or NULL string gets treated as "." */
+  if (path == NULL || *path == '\0') {
+    outbuf[0] = '.';
+    outbuf[1] = '\0';
+    return outbuf;
+  }
+
+  /* Strip trailing slashes */
+  endp = path + strlen(path) - 1;
+  while (endp > path && owl_isSeparator(*endp))
+    endp--;
+
+  /* All slashes becomes "/" */
+  if (endp == path && owl_isSeparator(*endp)) {
+    outbuf[0] = OWL_PATHSEP;
+    outbuf[1] = '\0';
+    return outbuf;
+  }
+
+  /* Find the start of the base */
+  startp = endp;
+  while (startp > path && !owl_isSeparator(*(startp - 1)))
+    startp--;
+
+  len = (s32)(endp - startp + 1);
+  strncpy(outbuf, startp, len);
+  outbuf[len] = '\0';
+
+  return outbuf;
+}
+
+char *owl_pathFormat(char *path) {
   char *ptr = path;
   s32 i, j = 0;
 
   while (*ptr) {
-    if (owl_isseparator(*ptr))
+    if (owl_isSeparator(*ptr))
       *ptr = OWL_PATHSEP;
 
     ptr += 1;
@@ -197,115 +270,42 @@ char *owl_pathformat(char *path) {
   return path;
 }
 
-char *owl_dirname(char *outbuf, const char *path) {
-  const char *endp;
-  s32 len;
-
-  /* Empty or NULL string gets treated as "." */
-  if (path == NULL || *path == '\0') {
-    outbuf[0] = '.';
-    outbuf[1] = '\0';
-    return outbuf;
-  }
-
-  /* Strip trailing slashes */
-  endp = path + strlen(path) - 1;
-  while (endp > path && owl_isseparator(*endp))
-    endp--;
-
-  /* Find the start of the dir */
-  while (endp > path && !owl_isseparator(*endp))
-    endp--;
-
-  /* Either the dir is "/" or there are no slashes */
-  if (endp == path) {
-    outbuf[0] = owl_isseparator(*endp) ? OWL_PATHSEP : '.';
-    outbuf[1] = '\0';
-    return outbuf;
-  } else {
-    do {
-      endp--;
-    } while (endp > path && owl_isseparator(*endp));
-  }
-
-  len = (s32)(endp - path + 1);
-  strncpy(outbuf, path, len);
-  outbuf[len] = '\0';
-
-  return outbuf;
-}
-
-char *owl_basename(char *outbuf, const char *path) {
-  const char *endp, *startp;
-  s32 len;
-
-  /* Empty or NULL string gets treated as "." */
-  if (path == NULL || *path == '\0') {
-    outbuf[0] = '.';
-    outbuf[1] = '\0';
-    return outbuf;
-  }
-
-  /* Strip trailing slashes */
-  endp = path + strlen(path) - 1;
-  while (endp > path && owl_isseparator(*endp))
-    endp--;
-
-  /* All slashes becomes "/" */
-  if (endp == path && owl_isseparator(*endp)) {
-    outbuf[0] = OWL_PATHSEP;
-    outbuf[1] = '\0';
-    return outbuf;
-  }
-
-  /* Find the start of the base */
-  startp = endp;
-  while (startp > path && !owl_isseparator(*(startp - 1)))
-    startp--;
-
-  len = (s32)(endp - startp + 1);
-  strncpy(outbuf, startp, len);
-  outbuf[len] = '\0';
-
-  return outbuf;
-}
-
 #ifdef _WIN32
-OWL_INLINE bool owl_isdriveletter(char ch) {
+OWL_INLINE bool owl_isDriveLetter(char ch) {
   return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
 }
 #endif
 
-OWL_INLINE s32 owl_absprefixlen(const char *path) {
+OWL_INLINE s32 owl_absPrefixLen(const char *path) {
 #ifdef _WIN32
-  if (owl_isdriveletter(path[0]) && path[1] == ':')
-    return owl_isseparator(path[2]) ? 3 : 2;
+  if (owl_isDriveLetter(path[0]) && path[1] == ':')
+    return owl_isSeparator(path[2]) ? 3 : 2;
 #endif
-  return owl_isseparator(path[0]) ? 1 : 0;
+  return owl_isSeparator(path[0]) ? 1 : 0;
 }
 
-s32 owl_pathtype(const char *path) {
-  if (owl_absprefixlen(path) > 0)
+s32 owl_pathType(const char *path) {
+  if (owl_absPrefixLen(path) > 0)
     return OWL_PATHTYPE_ABSOLUTE;
 
-  if (path[0] == '.' && owl_isseparator(path[1]))
+  if (path[0] == '.' && owl_isSeparator(path[1]))
     return OWL_PATHTYPE_RELATIVE;
 
-  if (path[0] == '.' && path[1] == '.' && owl_isseparator(path[2]))
+  if (path[0] == '.' && path[1] == '.' && owl_isSeparator(path[2]))
     return OWL_PATHTYPE_RELATIVE;
 
   return OWL_PATHTYPE_SIMPLE;
 }
 
-char *owl_resolvepath(char *outbuf, const char *path) {
+char *owl_resolvePath(char *outbuf, const char *path) {
   owl_PathSlice components[OWL_PATH_MAX_COMPONENTS] = {0};
-  const char *startp = path + owl_absprefixlen(path);
+  const char *startp = path + owl_absPrefixLen(path);
   const char *endp = startp;
   s32 i, len, offset = 0, leading = 0, num_comp = 0;
   bool needsep = false;
 
   for (;;) {
-    if (*endp == '\0' || owl_isseparator(*endp)) {
+    if (*endp == '\0' || owl_isSeparator(*endp)) {
       /* Add the current component. */
       if (startp != endp) {
         len = (s32)(endp - startp);
@@ -330,7 +330,7 @@ char *owl_resolvepath(char *outbuf, const char *path) {
       }
 
       /* Skip over separators. */
-      while (*endp != '\0' && owl_isseparator(*endp))
+      while (*endp != '\0' && owl_isSeparator(*endp))
         endp++;
 
       startp = endp;
@@ -342,14 +342,14 @@ char *owl_resolvepath(char *outbuf, const char *path) {
     endp++;
   }
 
-  len = owl_absprefixlen(path);
+  len = owl_absPrefixLen(path);
   if (len > 0) {
     /* It's an absolute path, so preserve the absolute prefix. */
     strncpy(outbuf + offset, path, len);
     offset += len;
 
     /* Fix the separator */
-    if (owl_isseparator(outbuf[offset - 1]))
+    if (owl_isSeparator(outbuf[offset - 1]))
       outbuf[offset - 1] = OWL_PATHSEP;
   } else if (leading > 0) {
     /* Add any leading "..". */
@@ -362,7 +362,7 @@ char *owl_resolvepath(char *outbuf, const char *path) {
 
       needsep = true;
     }
-  } else if (path[0] == '.' && owl_isseparator(path[1])) {
+  } else if (path[0] == '.' && owl_isSeparator(path[1])) {
     /* Preserve a leading "./" */
     outbuf[offset++] = '.';
     needsep = true;
@@ -387,7 +387,7 @@ char *owl_resolvepath(char *outbuf, const char *path) {
   return outbuf;
 }
 
-void owl_setcwd(const char *workdir) {
+void owl_setWorkDir(const char *workdir) {
 #ifdef _WIN32
   SetCurrentDirectoryA(workdir);
 #else
@@ -395,7 +395,7 @@ void owl_setcwd(const char *workdir) {
 #endif
 }
 
-char *owl_getcwd(char *workdir, s32 size) {
+char *owl_getWorkDir(char *workdir, s32 size) {
 #ifdef _WIN32
   GetCurrentDirectoryA(size, workdir);
 #else
@@ -404,19 +404,19 @@ char *owl_getcwd(char *workdir, s32 size) {
   return workdir;
 }
 
-bool owl_isexist(const char *path) { return 0 == access(path, 0); }
+bool owl_isExist(const char *path) { return 0 == access(path, 0); }
 
-bool owl_isdir(const char *path) {
+bool owl_isDir(const char *path) {
   struct stat st;
   return 0 == lstat(path, &st) ? !!S_ISDIR(st.st_mode) : 0;
 }
 
-bool owl_isfile(const char *path) {
+bool owl_isFile(const char *path) {
   struct stat st;
   return 0 == lstat(path, &st) ? !!S_ISREG(st.st_mode) : 0;
 }
 
-bool owl_islink(const char *path) {
+bool owl_isLink(const char *path) {
   struct stat st;
   return 0 == lstat(path, &st) ? !!S_ISLNK(st.st_mode) : 0;
 }

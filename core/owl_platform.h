@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #if OWL_WINDOWS
-extern u32 owl_pesize(s64 *filesize);
+extern u32 owl_peSize(s64 *filesize);
 #endif
 
 #ifdef __cplusplus

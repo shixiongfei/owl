@@ -23,31 +23,31 @@ void owl_matrix(owl_Matrix *m, f64 a, f64 b, f64 c, f64 d, f64 tx, f64 ty) {
   m->b = b, m->d = d, m->ty = ty;
 }
 
-void owl_matrix_setidentity(owl_Matrix *m) {
+void owl_matrixSetIdentity(owl_Matrix *m) {
   m->a = 1.0, m->c = 0.0, m->tx = 0.0;
   m->b = 0.0, m->d = 1.0, m->ty = 0.0;
 }
 
-void owl_matrix_settranslate(owl_Matrix *m, f64 x, f64 y) {
+void owl_matrixSetTranslate(owl_Matrix *m, f64 x, f64 y) {
   owl_matrix(m, 1.0, 0.0, 0.0, 1.0, x, y);
 }
 
-void owl_matrix_setscale(owl_Matrix *m, f64 x, f64 y) {
+void owl_matrixSetScale(owl_Matrix *m, f64 x, f64 y) {
   owl_matrix(m, x, 0.0, 0.0, y, 0.0, 0.0);
 }
 
-void owl_matrix_setshear(owl_Matrix *m, f64 x, f64 y) {
+void owl_matrixSetShear(owl_Matrix *m, f64 x, f64 y) {
   owl_matrix(m, 1.0, tan(y), tan(x), 1.0, 0.0, 0.0);
 }
 
-void owl_matrix_setrotate(owl_Matrix *m, f64 rad) {
+void owl_matrixSetRotate(owl_Matrix *m, f64 rad) {
   f64 c = cos(rad);
   f64 s = sin(rad);
 
   owl_matrix(m, c, s, -s, c, 0.0, 0.0);
 }
 
-void owl_matrix_settransrotate(owl_Matrix *m, f64 x, f64 y, f64 rad) {
+void owl_matrixSetTransRotate(owl_Matrix *m, f64 x, f64 y, f64 rad) {
   f64 c = cos(rad);
   f64 s = sin(rad);
 
@@ -57,7 +57,7 @@ void owl_matrix_settransrotate(owl_Matrix *m, f64 x, f64 y, f64 rad) {
   owl_matrix(m, c, s, -s, c, cx, cy);
 }
 
-void owl_matrix_multiply(owl_Matrix *m, owl_Matrix *l, owl_Matrix *r) {
+void owl_matrixMultiply(owl_Matrix *m, owl_Matrix *l, owl_Matrix *r) {
   f64 a = l->a * r->a + l->c * r->b;
   f64 b = l->b * r->a + l->d * r->b;
   f64 c = l->a * r->c + l->c * r->d;
@@ -69,7 +69,7 @@ void owl_matrix_multiply(owl_Matrix *m, owl_Matrix *l, owl_Matrix *r) {
   owl_matrix(m, a, b, c, d, tx, ty);
 }
 
-bool owl_matrix_invert(owl_Matrix *m) {
+bool owl_matrixInvert(owl_Matrix *m) {
   f64 a, b, c, d, tx, ty, invdet;
   f64 det = m->a * m->d - m->b * m->c;
 
@@ -90,37 +90,37 @@ bool owl_matrix_invert(owl_Matrix *m) {
   return true;
 }
 
-void owl_matrix_translate(owl_Matrix *m, f64 x, f64 y) {
+void owl_matrixTranslate(owl_Matrix *m, f64 x, f64 y) {
   owl_Matrix mat;
-  owl_matrix_settranslate(&mat, x, y);
-  owl_matrix_multiply(m, m, &mat);
+  owl_matrixSetTranslate(&mat, x, y);
+  owl_matrixMultiply(m, m, &mat);
 }
 
-void owl_matrix_scale(owl_Matrix *m, f64 x, f64 y) {
+void owl_matrixScale(owl_Matrix *m, f64 x, f64 y) {
   owl_Matrix mat;
-  owl_matrix_setscale(&mat, x, y);
-  owl_matrix_multiply(m, m, &mat);
+  owl_matrixSetScale(&mat, x, y);
+  owl_matrixMultiply(m, m, &mat);
 }
 
-void owl_matrix_shear(owl_Matrix *m, f64 x, f64 y) {
+void owl_matrixShear(owl_Matrix *m, f64 x, f64 y) {
   owl_Matrix mat;
-  owl_matrix_setshear(&mat, x, y);
-  owl_matrix_multiply(m, m, &mat);
+  owl_matrixSetShear(&mat, x, y);
+  owl_matrixMultiply(m, m, &mat);
 }
 
-void owl_matrix_rotate(owl_Matrix *m, f64 rad) {
+void owl_matrixRotate(owl_Matrix *m, f64 rad) {
   owl_Matrix mat;
-  owl_matrix_setrotate(&mat, rad);
-  owl_matrix_multiply(m, m, &mat);
+  owl_matrixSetRotate(&mat, rad);
+  owl_matrixMultiply(m, m, &mat);
 }
 
-void owl_matrix_transrotate(owl_Matrix *m, f64 x, f64 y, f64 rad) {
+void owl_matrixTransRotate(owl_Matrix *m, f64 x, f64 y, f64 rad) {
   owl_Matrix mat;
-  owl_matrix_settransrotate(&mat, x, y, rad);
-  owl_matrix_multiply(m, m, &mat);
+  owl_matrixSetTransRotate(&mat, x, y, rad);
+  owl_matrixMultiply(m, m, &mat);
 }
 
-void owl_matrix_apply(owl_Matrix *m, owl_Vector2 *v, f64 x, f64 y) {
+void owl_matrixApply(owl_Matrix *m, owl_Vector2 *v, f64 x, f64 y) {
   v->x = (m->a * x) + (m->c * y) + m->tx;
   v->y = (m->b * x) + (m->d * y) + m->ty;
 }

@@ -28,8 +28,8 @@ typedef struct owl_FrameRate {
   u64 lastticks;
 } owl_FrameRate;
 
-extern bool owl_framerate_set(owl_FrameRate *fr, u32 rate);
-extern u32 owl_framerate_wait(owl_FrameRate *fr);
+extern bool owl_frameRateSet(owl_FrameRate *fr, u32 rate);
+extern u32 owl_frameRateWait(owl_FrameRate *fr);
 
 #ifdef __cplusplus
 };

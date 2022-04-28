@@ -14,7 +14,7 @@
 #define OWL_FRAMERATE_UPPER_LIMIT 100
 #define OWL_FRAMERATE_LOWER_LIMIT 1
 
-bool owl_framerate_set(owl_FrameRate *fr, u32 rate) {
+bool owl_frameRateSet(owl_FrameRate *fr, u32 rate) {
   if (rate < OWL_FRAMERATE_LOWER_LIMIT || rate > OWL_FRAMERATE_UPPER_LIMIT)
     return false;
 
@@ -27,7 +27,7 @@ bool owl_framerate_set(owl_FrameRate *fr, u32 rate) {
   return true;
 }
 
-u32 owl_framerate_wait(owl_FrameRate *fr) {
+u32 owl_frameRateWait(owl_FrameRate *fr) {
   u64 current_ticks;
   u64 target_ticks;
   u32 time_passed;

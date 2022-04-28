@@ -53,7 +53,7 @@ static int owl_main(int argc, char *argv[]) {
   owl_Vertex vert[4] = {0};
   u16 indices[] = {0, 1, 2, 1, 2, 3};
 
-  owl_matrix_settransrotate(&m, c.x, c.y, owl_radians(1.0f));
+  owl_matrixSetTransRotate(&m, c.x, c.y, owl_radians(1.0f));
 
   sprintf(title, "Think Pixels | Owl Core: %s VM: %s",
           owl_version(NULL, NULL, NULL), owlvm_version(NULL, NULL, NULL));
@@ -70,10 +70,10 @@ static int owl_main(int argc, char *argv[]) {
 
   morph = owl_canvas(200, 200);
 
-  owl_loadfont("Unifont", "./unifont.ttf");
+  owl_loadFont("Unifont", "./unifont.ttf");
 
-  owl_loadsound("coin1", "./coin1.wav");
-  owl_loadsound("coin2", "./coin2.wav");
+  owl_loadSound("coin1", "./coin1.wav");
+  owl_loadSound("coin2", "./coin2.wav");
 
   hero = owl_loadex("hero.bmp", owl_rgb(0xff, 0, 0xff));
 
@@ -84,8 +84,8 @@ static int owl_main(int argc, char *argv[]) {
   hero_pos.w = (f32)w;
   hero_pos.h = (f32)h;
 
-  owl_textinput(true);
-  owl_textinputposition(100, 100);
+  owl_textInput(true);
+  owl_textInputPosition(100, 100);
 
   if (owl_font("Unifont", 16)) {
     text1 = owl_text(text, owl_rgb(0xff, 0, 0));
@@ -186,7 +186,7 @@ static int owl_main(int argc, char *argv[]) {
     if (kbd[OWL_KEY_RIGHTBUTTON])
       owl_pixel(55, 20);
 
-    owl_matrix_apply(&m, &v, v.x, v.y);
+    owl_matrixApply(&m, &v, v.x, v.y);
     owl_line((f32)c.x, (f32)c.y, (f32)v.x, (f32)v.y);
 
     owl_color(owl_rgb(0xff, 0, 0));
@@ -199,19 +199,19 @@ static int owl_main(int argc, char *argv[]) {
     owl_line(100, 20, 150, 20);
 
     owl_color(owl_rgb(0xff, 0xff, 0));
-    owl_fillpolygon(lines, 3);
+    owl_fillPolygon(lines, 3);
 
     owl_color(owl_rgb(0xff, 0, 0xff));
     owl_polygon(lines, 3, true);
 
     owl_color(owl_rgb(255, 174, 201));
     owl_rect(rect.x, rect.y, rect.w, rect.h);
-    owl_fillrect(rects[0].x, rects[0].y, rects[0].w, rects[0].h);
-    owl_fillrect(rects[1].x, rects[1].y, rects[1].w, rects[1].h);
+    owl_fillRect(rects[0].x, rects[0].y, rects[0].w, rects[0].h);
+    owl_fillRect(rects[1].x, rects[1].y, rects[1].w, rects[1].h);
 
     owl_color(owl_rgba(0, 0xff, 0, 0x5f));
-    owl_fillrect(rects1[0].x, rects1[0].y, rects1[0].w, rects1[0].h);
-    owl_fillrect(rects1[1].x, rects1[1].y, rects1[1].w, rects1[1].h);
+    owl_fillRect(rects1[0].x, rects1[0].y, rects1[0].w, rects1[0].h);
+    owl_fillRect(rects1[1].x, rects1[1].y, rects1[1].w, rects1[1].h);
 
     owl_blit(hero, NULL, &hero_pos, angle, NULL, 0);
 
@@ -231,28 +231,28 @@ static int owl_main(int argc, char *argv[]) {
     owl_clear();
     owl_blit(text3, NULL, &text3_pos, 0, NULL, 0);
 
-    owl_blendmode(morph, OWL_BLEND_NONE);
+    owl_blendMode(morph, OWL_BLEND_NONE);
     owl_color(owl_rgba(0, 0, 0, 0));
-    owl_fillrect(50, 50, 50, 50);
-    owl_blendmode(morph, OWL_BLEND_ALPHA);
+    owl_fillRect(50, 50, 50, 50);
+    owl_blendMode(morph, OWL_BLEND_ALPHA);
 
     owl_target(NULL);
     owl_blit(morph, NULL, &morph_pos, 0, NULL, 0);
 
     owl_color(owl_rgba(0, 0xff, 0, 0x5f));
-    owl_fillrect(600, 450, 100, 50);
-    owl_fillellipse(450, 450, 100, 50, 0.0f);
+    owl_fillRect(600, 450, 100, 50);
+    owl_fillEllipse(450, 450, 100, 50, 0.0f);
 
-    owl_blendmode(screen, OWL_BLEND_NONE);
+    owl_blendMode(screen, OWL_BLEND_NONE);
     owl_color(owl_rgba(0, 0, 0, 0));
-    owl_fillellipse(450, 450, 90, 40, 0.0f);
-    owl_blendmode(screen, OWL_BLEND_ALPHA);
+    owl_fillEllipse(450, 450, 90, 40, 0.0f);
+    owl_blendMode(screen, OWL_BLEND_ALPHA);
 
     owl_present();
     owl_wait();
   }
 
-  owl_freecanvas(hero);
+  owl_freeCanvas(hero);
 
   owl_quit();
   return 0;

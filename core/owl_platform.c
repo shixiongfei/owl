@@ -66,7 +66,7 @@ static int gettimeofday(struct timeval *tv, struct timezone *tz) {
 }
 
 /* @copy /b src.exe+your.data dst.exe */
-u32 owl_pesize(s64 *filesize) {
+u32 owl_peSize(s64 *filesize) {
   LARGE_INTEGER liFileSize = {0};
   DWORD dwPESize = 0;
   DWORD dwRead, dwMaxPointer = 0;
@@ -76,7 +76,7 @@ u32 owl_pesize(s64 *filesize) {
   BYTE pBuff[4096] = {0};
   WORD i;
 
-  HANDLE hFile = CreateFileA(owl_selfname(), GENERIC_READ, FILE_SHARE_READ,
+  HANDLE hFile = CreateFileA(owl_selfName(), GENERIC_READ, FILE_SHARE_READ,
                              NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
   if (INVALID_HANDLE_VALUE == hFile)

@@ -19,7 +19,7 @@ static u8 keyboard[OWL_KEY_MAX] = {0};
 static char input_text[32] = {0};
 static char edit_text[32] = {0};
 
-OWL_INLINE u8 owl_mapsdlbutton(u8 button) {
+OWL_INLINE u8 owl_mapSDLButton(u8 button) {
   switch (button) {
   case SDL_BUTTON_RIGHT:
     return OWL_KEY_RIGHTBUTTON;
@@ -29,7 +29,7 @@ OWL_INLINE u8 owl_mapsdlbutton(u8 button) {
   return button;
 }
 
-OWL_INLINE s32 owl_mapsdlkey(s32 scancode) {
+OWL_INLINE s32 owl_mapsSDLKey(s32 scancode) {
   static u8 keymap[SDL_NUM_SCANCODES] = {
       OWL_KEY_NULL,
       OWL_KEY_NULL,
@@ -282,12 +282,12 @@ bool owl_event(owl_Event *event) {
 
     case SDL_KEYDOWN:
       event->type = OWL_EVENT_KEYDOWN;
-      event->key.code = owl_mapsdlkey(e.key.keysym.scancode);
+      event->key.code = owl_mapsSDLKey(e.key.keysym.scancode);
       return true;
 
     case SDL_KEYUP:
       event->type = OWL_EVENT_KEYUP;
-      event->key.code = owl_mapsdlkey(e.key.keysym.scancode);
+      event->key.code = owl_mapsSDLKey(e.key.keysym.scancode);
       return true;
 
     case SDL_MOUSEMOTION:
@@ -298,14 +298,14 @@ bool owl_event(owl_Event *event) {
 
     case SDL_MOUSEBUTTONDOWN:
       event->type = OWL_EVENT_MOUSEDOWN;
-      event->button.button = owl_mapsdlbutton(e.button.button);
+      event->button.button = owl_mapSDLButton(e.button.button);
       event->button.x = e.button.x;
       event->button.y = e.button.y;
       return true;
 
     case SDL_MOUSEBUTTONUP:
       event->type = OWL_EVENT_MOUSEUP;
-      event->button.button = owl_mapsdlbutton(e.button.button);
+      event->button.button = owl_mapSDLButton(e.button.button);
       event->button.x = e.button.x;
       event->button.y = e.button.y;
       return true;
@@ -360,7 +360,7 @@ const u8 *owl_keystate(void) {
 
   for (scancode = 0; scancode < numkeys; ++scancode)
     if (kstate[scancode])
-      keyboard[owl_mapsdlkey(scancode)] = 1;
+      keyboard[owl_mapsSDLKey(scancode)] = 1;
 
   keyboard[OWL_KEY_NULL] = 0;
   return keyboard;
@@ -368,18 +368,18 @@ const u8 *owl_keystate(void) {
 
 void owl_mouse(s32 *x, s32 *y) { SDL_GetMouseState(x, y); }
 
-void owl_textinput(bool onoff) {
+void owl_textInput(bool onoff) {
   if (onoff)
     SDL_StartTextInput();
   else
     SDL_StopTextInput();
 }
 
-bool owl_textinputactive(void) { return SDL_IsTextInputActive(); }
+bool owl_textInputActive(void) { return SDL_IsTextInputActive(); }
 
-bool owl_textinputshown(void) { return strlen(edit_text) > 0; }
+bool owl_textInputShown(void) { return strlen(edit_text) > 0; }
 
-void owl_textinputposition(s32 x, s32 y) {
+void owl_textInputPosition(s32 x, s32 y) {
   SDL_Rect rect;
   s32 w, h;
 

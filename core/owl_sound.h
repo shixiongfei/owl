@@ -18,8 +18,8 @@
 extern "C" {
 #endif
 
-extern bool owl_soundinit(void);
-extern void owl_soundquit(void);
+extern bool owl_soundInit(void);
+extern void owl_soundQuit(void);
 
 #ifdef __cplusplus
 };

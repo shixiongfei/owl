@@ -18,8 +18,8 @@
 extern "C" {
 #endif
 
-extern bool owl_fontinit(void);
-extern void owl_fontquit(void);
+extern bool owl_fontInit(void);
+extern void owl_fontQuit(void);
 
 #ifdef __cplusplus
 };

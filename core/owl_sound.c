@@ -35,7 +35,7 @@ typedef struct owl_Sound {
 
 static owl_Table *sounds = NULL;
 
-static owl_Sound *owl_loadwav(const char *filename) {
+static owl_Sound *owl_loadWAV(const char *filename) {
   owl_Sound *sound;
   SDL_AudioSpec spec;
   u8 *wav;
@@ -59,7 +59,7 @@ static owl_Sound *owl_loadwav(const char *filename) {
   return sound;
 }
 
-static owl_Sound *owl_loadflac(const char *filename) {
+static owl_Sound *owl_loadFlac(const char *filename) {
   owl_Sound *sound;
   u32 channels, sample_rate;
   u64 num_samples;
@@ -89,7 +89,7 @@ static owl_Sound *owl_loadflac(const char *filename) {
   return sound;
 }
 
-static owl_Sound *owl_loadmp3(const char *filename) {
+static owl_Sound *owl_loadMP3(const char *filename) {
   owl_Sound *sound;
   drmp3_config mp3;
   u64 num_samples;
@@ -121,17 +121,17 @@ static owl_Sound *owl_loadmp3(const char *filename) {
 static owl_Sound *owl_sound(const char *filename) {
   owl_Sound *sound;
 
-  sound = owl_loadwav(filename);
+  sound = owl_loadWAV(filename);
 
   if (sound)
     return sound;
 
-  sound = owl_loadflac(filename);
+  sound = owl_loadFlac(filename);
 
   if (sound)
     return sound;
 
-  sound = owl_loadmp3(filename);
+  sound = owl_loadMP3(filename);
 
   if (sound)
     return sound;
@@ -139,9 +139,9 @@ static owl_Sound *owl_sound(const char *filename) {
   return NULL;
 }
 
-static void owl_freesound(owl_Sound *sound) {
-  owl_clearaudio(sound->audio);
-  owl_closeaudio(sound->audio);
+static void owl_freeSound(owl_Sound *sound) {
+  owl_clearAudio(sound->audio);
+  owl_closeAudio(sound->audio);
 
   switch (sound->type) {
   case OWL_SOUND_WAV:
@@ -158,7 +158,7 @@ static void owl_freesound(owl_Sound *sound) {
   free(sound);
 }
 
-static owl_Audio owl_openaudio(const SDL_AudioSpec *spec) {
+static owl_Audio owl_openAudio(const SDL_AudioSpec *spec) {
   owl_Audio audio = SDL_OpenAudioDevice(NULL, 0, spec, NULL, 0);
 
   if (audio)
@@ -167,15 +167,15 @@ static owl_Audio owl_openaudio(const SDL_AudioSpec *spec) {
   return audio;
 }
 
-bool owl_soundinit(void) {
+bool owl_soundInit(void) {
   if (!sounds)
     sounds = owl_table();
   return sounds != NULL;
 }
 
-void owl_soundquit(void) {
+void owl_soundQuit(void) {
   if (sounds) {
-    owl_freetable(sounds, (owl_Dtor)owl_freesound);
+    owl_freeTable(sounds, (owl_Dtor)owl_freeSound);
     sounds = NULL;
   }
 }
@@ -210,46 +210,46 @@ owl_Audio owl_audio(s32 freq, u8 format, u8 channels, u16 samples) {
     return 0;
   }
 
-  return owl_openaudio(&spec);
+  return owl_openAudio(&spec);
 }
 
-void owl_closeaudio(owl_Audio audio) {
+void owl_closeAudio(owl_Audio audio) {
   if (!audio)
     return;
 
   SDL_CloseAudioDevice(audio);
 }
 
-void owl_clearaudio(owl_Audio audio) {
+void owl_clearAudio(owl_Audio audio) {
   if (!audio)
     return;
 
   SDL_ClearQueuedAudio(audio);
 }
 
-void owl_playaudio(owl_Audio audio, bool onoff) {
+void owl_playAudio(owl_Audio audio, bool onoff) {
   if (!audio)
     return;
 
   SDL_PauseAudioDevice(audio, !onoff);
 }
 
-bool owl_audiostream(owl_Audio audio, const void *buffer, s32 len) {
+bool owl_audioStream(owl_Audio audio, const void *buffer, s32 len) {
   if (!audio)
     return false;
 
   return 0 == SDL_QueueAudio(audio, buffer, len);
 }
 
-u32 owl_audiobuffered(owl_Audio audio) {
+u32 owl_audioBuffered(owl_Audio audio) {
   if (!audio)
     return 0;
 
   return SDL_GetQueuedAudioSize(audio);
 }
 
-bool owl_loadsound(const char *name, const char *filename) {
-  owl_Sound *sound = (owl_Sound *)owl_gettable(sounds, name);
+bool owl_loadSound(const char *name, const char *filename) {
+  owl_Sound *sound = (owl_Sound *)owl_getTable(sounds, name);
 
   if (sound)
     return true;
@@ -262,57 +262,57 @@ bool owl_loadsound(const char *name, const char *filename) {
   if (!sound)
     return false;
 
-  owl_settable(sounds, name, sound);
+  owl_setTable(sounds, name, sound);
   return true;
 }
 
 bool owl_playing(const char *name) {
-  owl_Sound *sound = (owl_Sound *)owl_gettable(sounds, name);
+  owl_Sound *sound = (owl_Sound *)owl_getTable(sounds, name);
 
   if (!sound)
     return false;
 
-  return owl_audiobuffered(sound->audio) > 0;
+  return owl_audioBuffered(sound->audio) > 0;
 }
 
 bool owl_play(const char *name) {
-  owl_Sound *sound = (owl_Sound *)owl_gettable(sounds, name);
+  owl_Sound *sound = (owl_Sound *)owl_getTable(sounds, name);
 
   if (!sound)
     return false;
 
   if (!sound->audio)
-    sound->audio = owl_openaudio(&sound->spec);
+    sound->audio = owl_openAudio(&sound->spec);
 
-  return owl_audiostream(sound->audio, sound->buffer, sound->size);
+  return owl_audioStream(sound->audio, sound->buffer, sound->size);
 }
 
 bool owl_stop(const char *name) {
-  owl_Sound *sound = (owl_Sound *)owl_gettable(sounds, name);
+  owl_Sound *sound = (owl_Sound *)owl_getTable(sounds, name);
 
   if (!sound)
     return false;
 
-  owl_clearaudio(sound->audio);
+  owl_clearAudio(sound->audio);
   return true;
 }
 
 bool owl_pause(const char *name) {
-  owl_Sound *sound = (owl_Sound *)owl_gettable(sounds, name);
+  owl_Sound *sound = (owl_Sound *)owl_getTable(sounds, name);
 
   if (!sound)
     return false;
 
-  owl_playaudio(sound->audio, false);
+  owl_playAudio(sound->audio, false);
   return true;
 }
 
 bool owl_resume(const char *name) {
-  owl_Sound *sound = (owl_Sound *)owl_gettable(sounds, name);
+  owl_Sound *sound = (owl_Sound *)owl_getTable(sounds, name);
 
   if (!sound)
     return false;
 
-  owl_playaudio(sound->audio, true);
+  owl_playAudio(sound->audio, true);
   return true;
 }

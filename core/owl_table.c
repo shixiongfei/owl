@@ -29,19 +29,19 @@ struct owl_Table {
 
 #define owl_trie() (owl_TrieNode *)calloc(1, sizeof(owl_TrieNode))
 
-static void owl_triefree(owl_TrieNode *trie) {
+static void owl_freeTrie(owl_TrieNode *trie) {
   s32 i;
 
   for (i = 0; i < OWL_TRIE_FACTOR; ++i)
     if (trie->next[i]) {
-      owl_triefree(trie->next[i]);
+      owl_freeTrie(trie->next[i]);
       trie->next[i] = NULL;
     }
 
   free(trie);
 }
 
-static void owl_triedtor(owl_Table *table, owl_TrieNode *trie, owl_Dtor dtor) {
+static void owl_trieDtor(owl_Table *table, owl_TrieNode *trie, owl_Dtor dtor) {
   s32 i;
 
   if (trie->value) {
@@ -54,10 +54,10 @@ static void owl_triedtor(owl_Table *table, owl_TrieNode *trie, owl_Dtor dtor) {
 
   for (i = 0; i < OWL_TRIE_FACTOR; ++i)
     if (trie->next[i])
-      owl_triedtor(table, trie->next[i], dtor);
+      owl_trieDtor(table, trie->next[i], dtor);
 }
 
-static void *owl_settrie(owl_Table *table, owl_TrieNode *trie, void *value) {
+static void *owl_setTrie(owl_Table *table, owl_TrieNode *trie, void *value) {
   void *oldval = trie->value;
 
   if (!oldval)
@@ -71,7 +71,7 @@ static void *owl_settrie(owl_Table *table, owl_TrieNode *trie, void *value) {
   return oldval;
 }
 
-static owl_TrieNode **owl_gettrie(owl_TrieNode **root, const char *name,
+static owl_TrieNode **owl_getTrie(owl_TrieNode **root, const char *name,
                                   bool build) {
   owl_TrieNode **node = root;
   const u8 *p = (const u8 *)name;
@@ -105,7 +105,7 @@ static owl_TrieNode **owl_gettrie(owl_TrieNode **root, const char *name,
   return node;
 }
 
-static owl_TrieNode **owl_igettrie(owl_TrieNode **root, u64 key, bool build) {
+static owl_TrieNode **owl_iGetTrie(owl_TrieNode **root, u64 key, bool build) {
   owl_TrieNode **node = root;
 
   while (key > 0) {
@@ -135,38 +135,38 @@ owl_Table *owl_table(void) {
   return table;
 }
 
-void owl_freetable(owl_Table *table, owl_Dtor dtor) {
-  owl_triedtor(table, table->root, dtor);
-  owl_triefree(table->root);
+void owl_freeTable(owl_Table *table, owl_Dtor dtor) {
+  owl_trieDtor(table, table->root, dtor);
+  owl_freeTrie(table->root);
   free(table);
 }
 
-void owl_cleartable(owl_Table *table, owl_Dtor dtor) {
+void owl_clearTable(owl_Table *table, owl_Dtor dtor) {
   owl_TrieNode *root = table->root;
   s32 i;
 
-  owl_triedtor(table, root, dtor);
+  owl_trieDtor(table, root, dtor);
 
   for (i = 0; i < OWL_TRIE_FACTOR; ++i)
     if (root->next[i]) {
-      owl_triefree(root->next[i]);
+      owl_freeTrie(root->next[i]);
       root->next[i] = NULL;
     }
 }
 
-s32 owl_tablesize(owl_Table *table) { return table->count; }
+s32 owl_tableSize(owl_Table *table) { return table->count; }
 
-void *owl_settable(owl_Table *table, const char *name, void *value) {
-  owl_TrieNode **node = owl_gettrie(&table->root, name, true);
+void *owl_setTable(owl_Table *table, const char *name, void *value) {
+  owl_TrieNode **node = owl_getTrie(&table->root, name, true);
 
   if (!node)
     return NULL;
 
-  return owl_settrie(table, *node, value);
+  return owl_setTrie(table, *node, value);
 }
 
-void *owl_gettable(owl_Table *table, const char *name) {
-  owl_TrieNode **node = owl_gettrie(&table->root, name, false);
+void *owl_getTable(owl_Table *table, const char *name) {
+  owl_TrieNode **node = owl_getTrie(&table->root, name, false);
 
   if (!node)
     return NULL;
@@ -174,17 +174,17 @@ void *owl_gettable(owl_Table *table, const char *name) {
   return (*node)->value;
 }
 
-void *owl_isettable(owl_Table *table, u64 key, void *value) {
-  owl_TrieNode **node = owl_igettrie(&table->root, key, true);
+void *owl_iSetTable(owl_Table *table, u64 key, void *value) {
+  owl_TrieNode **node = owl_iGetTrie(&table->root, key, true);
 
   if (!node)
     return NULL;
 
-  return owl_settrie(table, *node, value);
+  return owl_setTrie(table, *node, value);
 }
 
-void *owl_igettable(owl_Table *table, u64 key) {
-  owl_TrieNode **node = owl_igettrie(&table->root, key, false);
+void *owl_iGetTable(owl_Table *table, u64 key) {
+  owl_TrieNode **node = owl_iGetTrie(&table->root, key, false);
 
   if (!node)
     return NULL;

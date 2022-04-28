@@ -22,13 +22,13 @@ typedef struct owl_Table owl_Table;
 typedef void (*owl_Dtor)(void *);
 
 extern owl_Table *owl_table(void);
-extern void owl_freetable(owl_Table *table, owl_Dtor dtor);
-extern void owl_cleartable(owl_Table *table, owl_Dtor dtor);
-extern s32 owl_tablesize(owl_Table *table);
-extern void *owl_settable(owl_Table *table, const char *name, void *value);
-extern void *owl_gettable(owl_Table *table, const char *name);
-extern void *owl_isettable(owl_Table *table, u64 key, void *value);
-extern void *owl_igettable(owl_Table *table, u64 key);
+extern void owl_freeTable(owl_Table *table, owl_Dtor dtor);
+extern void owl_clearTable(owl_Table *table, owl_Dtor dtor);
+extern s32 owl_tableSize(owl_Table *table);
+extern void *owl_setTable(owl_Table *table, const char *name, void *value);
+extern void *owl_getTable(owl_Table *table, const char *name);
+extern void *owl_iSetTable(owl_Table *table, u64 key, void *value);
+extern void *owl_iGetTable(owl_Table *table, u64 key);
 
 #ifdef __cplusplus
 };

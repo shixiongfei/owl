@@ -113,13 +113,13 @@ bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
   app->width = width;
   app->height = height;
 
-  if (!owl_fontinit())
+  if (!owl_fontInit())
     goto error;
 
-  if (!owl_soundinit())
+  if (!owl_soundInit())
     goto error;
 
-  owl_setfps(OWL_FRAMERATE_DEFAULT);
+  owl_setFPS(OWL_FRAMERATE_DEFAULT);
   return true;
 
 error:
@@ -128,8 +128,8 @@ error:
 }
 
 void owl_quit(void) {
-  owl_soundquit();
-  owl_fontquit();
+  owl_soundQuit();
+  owl_fontQuit();
 
   if (app->texture) {
     GPU_FreeImage(app->texture);
@@ -150,11 +150,11 @@ void owl_quit(void) {
   SDL_Quit();
 }
 
-bool owl_setfps(u32 rate) { return owl_framerate_set(&app->fps, rate); }
+bool owl_setFPS(u32 rate) { return owl_frameRateSet(&app->fps, rate); }
 
-u32 owl_getfps(void) { return app->fps.rate; }
+u32 owl_getFPS(void) { return app->fps.rate; }
 
-u32 owl_wait(void) { return owl_framerate_wait(&app->fps); }
+u32 owl_wait(void) { return owl_frameRateWait(&app->fps); }
 
 owl_Canvas *owl_screen(void) { return app->texture; }
 
@@ -181,10 +181,11 @@ static SDL_Surface *owl_surface(const u8 *data, s32 w, s32 h, u8 format) {
   return SDL_CreateRGBSurfaceWithFormatFrom((void *)data, w, h, d, p, f);
 }
 
-static owl_Canvas *owl_fromsurface(SDL_Surface *surface) {
+static owl_Canvas *owl_fromSurface(SDL_Surface *surface, bool free_surface) {
   owl_Canvas *canvas = GPU_CopyImageFromSurface(surface);
 
-  SDL_FreeSurface(surface);
+  if (free_surface)
+    SDL_FreeSurface(surface);
 
   if (!canvas)
     return NULL;
@@ -201,7 +202,7 @@ owl_Canvas *owl_image(const u8 *data, s32 w, s32 h, u8 format) {
   if (!surface)
     return NULL;
 
-  return owl_fromsurface(surface);
+  return owl_fromSurface(surface, true);
 }
 
 owl_Canvas *owl_imagex(const u8 *data, s32 w, s32 h, owl_Pixel colorkey) {
@@ -214,7 +215,7 @@ owl_Canvas *owl_imagex(const u8 *data, s32 w, s32 h, owl_Pixel colorkey) {
   key = SDL_MapRGB(surface->format, colorkey.r, colorkey.g, colorkey.b);
   SDL_SetColorKey(surface, SDL_TRUE, key);
 
-  return owl_fromsurface(surface);
+  return owl_fromSurface(surface, true);
 }
 
 owl_Canvas *owl_load(const char *filename) {
@@ -256,7 +257,7 @@ owl_Canvas *owl_loadex(const char *filename, owl_Pixel colorkey) {
   return canvas;
 }
 
-void owl_freecanvas(owl_Canvas *canvas) {
+void owl_freeCanvas(owl_Canvas *canvas) {
   if (canvas == app->texture)
     return;
 
@@ -275,7 +276,7 @@ void owl_size(owl_Canvas *canvas, s32 *w, s32 *h) {
     *h = canvas->h;
 }
 
-static void owl_shapeblendmode(owl_Canvas *canvas) {
+static void owl_shapeBlendMode(owl_Canvas *canvas) {
   GPU_BlendMode b = canvas->blend_mode;
 
   GPU_SetShapeBlendFunction(b.source_color, b.dest_color, b.source_alpha,
@@ -285,7 +286,7 @@ static void owl_shapeblendmode(owl_Canvas *canvas) {
   GPU_SetShapeBlending(GPU_GetBlending(canvas));
 }
 
-void owl_blendmode(owl_Canvas *canvas, s32 mode) {
+void owl_blendMode(owl_Canvas *canvas, s32 mode) {
   switch (mode) {
   case OWL_BLEND_ALPHA:
     GPU_SetBlendMode(canvas, GPU_BLEND_NORMAL);
@@ -298,7 +299,7 @@ void owl_blendmode(owl_Canvas *canvas, s32 mode) {
   }
 
   if (GPU_GetTarget(canvas) == app->target)
-    owl_shapeblendmode(canvas);
+    owl_shapeBlendMode(canvas);
 }
 
 void owl_target(owl_Canvas *canvas) {
@@ -313,7 +314,7 @@ void owl_target(owl_Canvas *canvas) {
     app->target = target;
 
     GPU_SetActiveTarget(app->target);
-    owl_shapeblendmode(canvas);
+    owl_shapeBlendMode(canvas);
   }
 }
 
@@ -339,7 +340,7 @@ void owl_rect(f32 x, f32 y, f32 w, f32 h) {
   GPU_Rectangle2(app->target, rect, OWL_COLOR);
 }
 
-void owl_fillrect(f32 x, f32 y, f32 w, f32 h) {
+void owl_fillRect(f32 x, f32 y, f32 w, f32 h) {
   GPU_Rect rect = {x, y, w, h};
   GPU_RectangleFilled2(app->target, rect, OWL_COLOR);
 }
@@ -348,7 +349,7 @@ void owl_arc(f32 x, f32 y, f32 radius, f32 start_angle, f32 end_angle) {
   GPU_Arc(app->target, x, y, radius, start_angle, end_angle, OWL_COLOR);
 }
 
-void owl_fillarc(f32 x, f32 y, f32 radius, f32 start_angle, f32 end_angle) {
+void owl_fillArc(f32 x, f32 y, f32 radius, f32 start_angle, f32 end_angle) {
   GPU_ArcFilled(app->target, x, y, radius, start_angle, end_angle, OWL_COLOR);
 }
 
@@ -356,7 +357,7 @@ void owl_circle(f32 x, f32 y, f32 radius) {
   GPU_Circle(app->target, x, y, radius, OWL_COLOR);
 }
 
-void owl_fillcircle(f32 x, f32 y, f32 radius) {
+void owl_fillCircle(f32 x, f32 y, f32 radius) {
   GPU_CircleFilled(app->target, x, y, radius, OWL_COLOR);
 }
 
@@ -364,7 +365,7 @@ void owl_ellipse(f32 x, f32 y, f32 rx, f32 ry, f32 degrees) {
   GPU_Ellipse(app->target, x, y, rx, ry, degrees, OWL_COLOR);
 }
 
-void owl_fillellipse(f32 x, f32 y, f32 rx, f32 ry, f32 degrees) {
+void owl_fillEllipse(f32 x, f32 y, f32 rx, f32 ry, f32 degrees) {
   GPU_EllipseFilled(app->target, x, y, rx, ry, degrees, OWL_COLOR);
 }
 
@@ -374,7 +375,7 @@ void owl_sector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
              end_angle, OWL_COLOR);
 }
 
-void owl_fillsector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
+void owl_fillSector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
                       f32 start_angle, f32 end_angle) {
   GPU_SectorFilled(app->target, x, y, inner_radius, outer_radius, start_angle,
                    end_angle, OWL_COLOR);
@@ -384,16 +385,16 @@ void owl_tri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3) {
   GPU_Tri(app->target, x1, y1, x2, y2, x3, y3, OWL_COLOR);
 }
 
-void owl_filltri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3) {
+void owl_fillTri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3) {
   GPU_TriFilled(app->target, x1, y1, x2, y2, x3, y3, OWL_COLOR);
 }
 
-void owl_rectround(f32 x, f32 y, f32 w, f32 h, f32 radius) {
+void owl_rectRound(f32 x, f32 y, f32 w, f32 h, f32 radius) {
   GPU_Rect rect = {x, y, w, h};
   GPU_RectangleRound2(app->target, rect, radius, OWL_COLOR);
 }
 
-void owl_fillrectround(f32 x, f32 y, f32 w, f32 h, f32 radius) {
+void owl_fillRectRound(f32 x, f32 y, f32 w, f32 h, f32 radius) {
   GPU_Rect rect = {x, y, w, h};
   GPU_RectangleRoundFilled2(app->target, rect, radius, OWL_COLOR);
 }
@@ -402,7 +403,7 @@ void owl_polygon(const owl_Point *points, s32 num_points, bool close) {
   GPU_Polyline(app->target, num_points, (float *)points, OWL_COLOR, close);
 }
 
-void owl_fillpolygon(const owl_Point *points, s32 num_points) {
+void owl_fillPolygon(const owl_Point *points, s32 num_points) {
   GPU_PolygonFilled(app->target, num_points, (float *)points, OWL_COLOR);
 }
 
