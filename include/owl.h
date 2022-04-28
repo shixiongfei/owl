@@ -98,6 +98,15 @@
 #define OWL_VIEW 1
 #define OWL_PROJECTION 2
 
+#define OWL_NEVER 0x0200
+#define OWL_LESS 0x0201
+#define OWL_EQUAL 0x0202
+#define OWL_LEQUAL 0x0203
+#define OWL_GREATER 0x0204
+#define OWL_NOTEQUAL 0x0205
+#define OWL_GEQUAL 0x0206
+#define OWL_ALWAYS 0x0207
+
 #define OWL_AUDIO_U8 0
 #define OWL_AUDIO_S8 1
 #define OWL_AUDIO_U16 2
@@ -473,11 +482,13 @@ OWL_API void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
 OWL_API void owl_present(void);
 
 OWL_API void owl_matrixMode3D(int matrix_mode);
+OWL_API void owl_matrixMultiply3D(const owl_Matrix4 *matrix);
+
 OWL_API void owl_pushMatrix3D(void);
 OWL_API void owl_popMatrix3D(void);
 OWL_API void owl_loadMatrix3D(const owl_Matrix4 *matrix);
-OWL_API void owl_matrixLoadIdentity3D(void);
-OWL_API void owl_matrixMultiply3D(const owl_Matrix4 *matrix);
+OWL_API void owl_loadIdentity3D(void);
+
 OWL_API void owl_ortho3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
                          f32 z_far);
 OWL_API void owl_frustum3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
@@ -490,6 +501,7 @@ OWL_API void owl_translate3D(f32 x, f32 y, f32 z);
 OWL_API void owl_scale3D(f32 sx, f32 sy, f32 sz);
 OWL_API void owl_rotate3D(f32 degrees, f32 x, f32 y, f32 z);
 OWL_API void owl_resetProjection3D(void);
+
 OWL_API void owl_modelViewProjection3D(owl_Matrix4 *result);
 OWL_API void owl_setMatrix3D(int matrix_mode, const owl_Matrix4 *matrix);
 OWL_API owl_Matrix4 *owl_getMatrix3D(int matrix_mode);
@@ -497,6 +509,10 @@ OWL_API owl_Matrix4 *owl_currentMatrix3D(void);
 
 OWL_API void owl_begin3D(void);
 OWL_API void owl_end3D(void);
+
+OWL_API void owl_zbuffer(owl_Canvas *canvas);
+OWL_API void owl_depthTest(bool enable);
+OWL_API void owl_depthFunction(s32 op);
 
 OWL_API void owl_geometry3D(owl_Canvas *texture, s32 type,
                             const owl_Vertex3D *vertices, s32 num_vertices,

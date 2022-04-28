@@ -27,8 +27,55 @@ typedef struct Args {
   char **argv;
 } Args;
 
-static void drawBox(f32 length, f32 x, f32 y, f32 z) {
+/*
+ *       4        5
+ *       +--------+
+ *      /|       /|
+ *   0 / |    1 / |
+ *    +--------+  |
+ *    |  |     |  |
+ *    |  +-----|--+
+ *    | / 6    | / 7
+ *    |/       |/
+ *    +--------+
+ *   2        3
+ */
+static void drawBox(void) {
+  owl_Vertex3D vert[] = {
+      {{-0.5f, -0.5f, -0.5f}, {0}, {255, 255, 255, 255}},
+      {{0.5f, -0.5f, -0.5f}, {0}, {255, 0, 0, 255}},
+      {{-0.5f, 0.5f, -0.5f}, {0}, {0, 0, 255, 255}},
+      {{0.5f, 0.5f, -0.5f}, {0}, {0, 255, 0, 255}},
+      {{-0.5f, -0.5f, 0.5f}, {0}, {255, 255, 255, 255}},
+      {{0.5f, -0.5f, 0.5f}, {0}, {255, 0, 0, 255}},
+      {{-0.5f, 0.5f, 0.5f}, {0}, {0, 0, 255, 255}},
+      {{0.5f, 0.5f, 0.5f}, {0}, {0, 255, 0, 255}},
+  };
+  u16 indices[] = {
+      0, 1, 3, // front side
+      3, 2, 0, //
+      0, 4, 6, // left side
+      6, 2, 0, //
+      1, 5, 7, // right side
+      7, 3, 1, //
+      5, 4, 6, // back side
+      6, 7, 5, //
+      1, 0, 4, // top side
+      4, 5, 1, //
+      3, 7, 6, // bottom side
+      6, 2, 3, //
+  };
 
+  owl_begin3D();
+  owl_depthTest(true);
+  owl_ortho3D(-3.0f, 3.0f, -3.0f, 3.0f, -100.0f, 100.0f);
+  owl_translate3D(0.5f, 0.0f, 0.0f);
+  owl_rotate3D(30.0f, 1.0f, 1.0f, 0.0f);
+  owl_geometry3D(NULL, OWL_GEOMETRY_TRIANGLES, vert,
+                 sizeof(vert) / sizeof(*vert), indices,
+                 sizeof(indices) / sizeof(*indices));
+  owl_depthTest(false);
+  owl_end3D();
 }
 
 static int owl_main(int argc, char *argv[]) {
@@ -74,6 +121,9 @@ static int owl_main(int argc, char *argv[]) {
     owl_quit();
     return -1;
   }
+
+  // 启用Z缓存
+  owl_zbuffer(screen);
 
   morph = owl_canvas(200, 200);
 
@@ -160,6 +210,7 @@ static int owl_main(int argc, char *argv[]) {
     owl_geometry(hero, OWL_GEOMETRY_TRIANGLES, vert,
                  sizeof(vert) / sizeof(*vert), indices,
                  sizeof(indices) / sizeof(*indices));
+    drawBox();
 
     owl_color(owl_rgb(0xff, 0, 0xff));
 
