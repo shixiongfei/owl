@@ -27,6 +27,10 @@ typedef struct Args {
   char **argv;
 } Args;
 
+static void drawBox(f32 length, f32 x, f32 y, f32 z) {
+
+}
+
 static int owl_main(int argc, char *argv[]) {
   bool quit = false;
   char title[128];
@@ -52,8 +56,8 @@ static int owl_main(int argc, char *argv[]) {
   owl_Vector2 c = {80, 80}, v = {130, 80};
   owl_Vertex vert[4] = {0};
   u16 indices[] = {
-      0, 1, 2, // 第一个三角面
-      1, 2, 3  // 第二个三角面
+      2, 0, 1, // 第一个三角面
+      1, 3, 2  // 第二个三角面
   };
 
   owl_matrixSetTransRotate(&m, c.x, c.y, owl_radians(1.0f));
@@ -153,9 +157,11 @@ static int owl_main(int argc, char *argv[]) {
     owl_color(owl_rgb(0, 0, 0));
     owl_clear();
 
-    owl_color(owl_rgb(0xff, 0, 0xff));
-    owl_geometry(hero, vert, sizeof(vert) / sizeof(*vert), indices,
+    owl_geometry(hero, OWL_GEOMETRY_TRIANGLES, vert,
+                 sizeof(vert) / sizeof(*vert), indices,
                  sizeof(indices) / sizeof(*indices));
+
+    owl_color(owl_rgb(0xff, 0, 0xff));
 
     while (owl_event(&event)) {
       switch (event.type) {

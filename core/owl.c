@@ -400,17 +400,18 @@ void owl_fillRectRound(f32 x, f32 y, f32 w, f32 h, f32 radius) {
 }
 
 void owl_polygon(const owl_Point *points, s32 num_points, bool close) {
-  GPU_Polyline(app->target, num_points, (float *)points, OWL_COLOR, close);
+  GPU_Polyline(app->target, num_points, (f32 *)points, OWL_COLOR, close);
 }
 
 void owl_fillPolygon(const owl_Point *points, s32 num_points) {
-  GPU_PolygonFilled(app->target, num_points, (float *)points, OWL_COLOR);
+  GPU_PolygonFilled(app->target, num_points, (f32 *)points, OWL_COLOR);
 }
 
-void owl_geometry(owl_Canvas *texture, const owl_Vertex *vertices,
+void owl_geometry(owl_Canvas *texture, s32 type, const owl_Vertex *vertices,
                   s32 num_vertices, const u16 *indices, s32 num_indices) {
-  GPU_TriangleBatchX(texture, app->target, num_vertices, (void *)vertices,
-                     num_indices, (u16 *)indices, GPU_BATCH_XY_ST_RGBA8);
+  GPU_PrimitiveBatchV(texture, app->target, type, num_vertices,
+                      (void *)vertices, num_indices, (u16 *)indices,
+                      GPU_BATCH_XY_ST_RGBA8);
 }
 
 void owl_clip(const owl_Rect *rect) {
@@ -418,6 +419,13 @@ void owl_clip(const owl_Rect *rect) {
     GPU_SetClipRect(app->target, *(GPU_Rect *)rect);
   else
     GPU_UnsetClip(app->target);
+}
+
+void owl_viewport(const owl_Rect *rect) {
+  if (rect)
+    GPU_SetViewport(app->target, *(GPU_Rect *)rect);
+  else
+    GPU_UnsetViewport(app->target);
 }
 
 void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
@@ -440,4 +448,109 @@ void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
 void owl_present(void) {
   GPU_BlitRect(app->texture, NULL, app->renderer, NULL);
   GPU_Flip(app->renderer);
+}
+
+void owl_matrixMode3D(int matrix_mode) {
+  GPU_MatrixMode(app->target, matrix_mode);
+}
+
+void owl_pushMatrix3D(void) { GPU_PushMatrix(); }
+
+void owl_popMatrix3D(void) { GPU_PopMatrix(); }
+
+void owl_loadMatrix3D(const owl_Matrix4 *matrix) { GPU_LoadMatrix(matrix->m); }
+
+void owl_matrixLoadIdentity3D(void) { GPU_LoadIdentity(); }
+
+void owl_matrixMultiply3D(const owl_Matrix4 *matrix) {
+  GPU_MultMatrix(matrix->m);
+}
+
+void owl_ortho3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
+                      f32 z_far) {
+  GPU_Ortho(left, right, bottom, top, z_near, z_far);
+}
+
+void owl_frustum3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
+                        f32 z_far) {
+  GPU_Frustum(left, right, bottom, top, z_near, z_far);
+}
+
+void owl_perspective3D(f32 fovy, f32 aspect, f32 z_near, f32 z_far) {
+  GPU_Perspective(fovy, aspect, z_near, z_far);
+}
+
+void owl_lookAt3D(f32 eye_x, f32 eye_y, f32 eye_z, f32 target_x,
+                       f32 target_y, f32 target_z, f32 up_x, f32 up_y,
+                       f32 up_z) {
+  GPU_LookAt(eye_x, eye_y, eye_z, target_x, target_y, target_z, up_x, up_y,
+             up_z);
+}
+
+void owl_translate3D(f32 x, f32 y, f32 z) { GPU_Translate(x, y, z); }
+
+void owl_scale3D(f32 sx, f32 sy, f32 sz) { GPU_Scale(sx, sy, sz); }
+
+void owl_rotate3D(f32 degrees, f32 x, f32 y, f32 z) {
+  GPU_Rotate(degrees, x, y, z);
+}
+
+void owl_resetProjection3D(void) { GPU_ResetProjection(app->target); }
+
+void owl_modelViewProjection3D(owl_Matrix4 *result) {
+  GPU_GetModelViewProjection(result->m);
+}
+
+void owl_setMatrix3D(int matrix_mode, const owl_Matrix4 *matrix) {
+  if (matrix_mode == GPU_MODEL)
+    GPU_SetModel(matrix->m);
+  else if (matrix_mode == GPU_VIEW)
+    GPU_SetView(matrix->m);
+  else // if(matrix_mode == GPU_PROJECTION)
+    GPU_SetProjection(matrix->m);
+}
+
+owl_Matrix4 *owl_getMatrix3D(int matrix_mode) {
+  if (matrix_mode == GPU_MODEL)
+    return (owl_Matrix4 *)GPU_GetModel();
+  else if (matrix_mode == GPU_VIEW)
+    return (owl_Matrix4 *)GPU_GetView();
+  else // if(matrix_mode == GPU_PROJECTION)
+    return (owl_Matrix4 *)GPU_GetProjection();
+}
+
+owl_Matrix4 *owl_currentMatrix3D(void) {
+  return (owl_Matrix4 *)GPU_GetCurrentMatrix();
+}
+
+void owl_begin3D(void) {
+  GPU_FlushBlitBuffer();
+
+  owl_matrixMode3D(OWL_MODEL);
+  owl_pushMatrix3D();
+  owl_matrixLoadIdentity3D();
+  owl_matrixMode3D(OWL_VIEW);
+  owl_pushMatrix3D();
+  owl_matrixLoadIdentity3D();
+  owl_matrixMode3D(OWL_PROJECTION);
+  owl_pushMatrix3D();
+  owl_matrixLoadIdentity3D();
+}
+
+void owl_end3D(void) {
+  GPU_ResetRendererState();
+
+  owl_matrixMode3D(OWL_MODEL);
+  owl_popMatrix3D();
+  owl_matrixMode3D(OWL_VIEW);
+  owl_popMatrix3D();
+  owl_matrixMode3D(OWL_PROJECTION);
+  owl_popMatrix3D();
+}
+
+void owl_geometry3D(owl_Canvas *texture, s32 type, const owl_Vertex3D *vertices,
+                    s32 num_vertices, const u16 *indices, s32 num_indices) {
+  GPU_PrimitiveBatchV(texture, app->target, type, num_vertices,
+                      (void *)vertices, num_indices, (u16 *)indices,
+                      GPU_BATCH_XYZ_ST_RGBA8);
 }
