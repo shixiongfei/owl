@@ -50,7 +50,8 @@ static int owl_main(int argc, char *argv[]) {
   const u8 *kbd;
   owl_Matrix m;
   owl_Vector2 c = {80, 80}, v = {130, 80};
-  owl_Vertex vert[3] = {0};
+  owl_Vertex vert[4] = {0};
+  u16 indices[] = {0, 1, 2, 1, 2, 3};
 
   owl_matrix_settransrotate(&m, c.x, c.y, owl_radians(1.0f));
 
@@ -103,29 +104,45 @@ static int owl_main(int argc, char *argv[]) {
     text3_pos.h = (f32)h;
   }
 
-  // center
-  vert[0].position.x = 300;
+  // left-top
+  vert[0].position.x = 200;
   vert[0].position.y = 100;
   vert[0].color.r = 255;
-  vert[0].color.g = 0;
-  vert[0].color.b = 0;
+  vert[0].color.g = 255;
+  vert[0].color.b = 255;
   vert[0].color.a = 255;
+  vert[0].uv.x = 0.0f;
+  vert[0].uv.y = 0.0f;
 
-  // left
-  vert[1].position.x = 100;
-  vert[1].position.y = 400;
-  vert[1].color.r = 0;
+  // right-top
+  vert[1].position.x = 200 + hero_pos.w;
+  vert[1].position.y = 100;
+  vert[1].color.r = 255;
   vert[1].color.g = 0;
-  vert[1].color.b = 255;
+  vert[1].color.b = 0;
   vert[1].color.a = 255;
+  vert[1].uv.x = 1.0f;
+  vert[1].uv.y = 0.0f;
 
-  // right
-  vert[2].position.x = 500;
-  vert[2].position.y = 400;
+  // left-bottom
+  vert[2].position.x = 200;
+  vert[2].position.y = 100 + hero_pos.h;
   vert[2].color.r = 0;
-  vert[2].color.g = 255;
-  vert[2].color.b = 0;
+  vert[2].color.g = 0;
+  vert[2].color.b = 255;
   vert[2].color.a = 255;
+  vert[2].uv.x = 0.0f;
+  vert[2].uv.y = 1.0f;
+
+  // right-bottom
+  vert[3].position.x = 200 + hero_pos.w;
+  vert[3].position.y = 100 + hero_pos.h;
+  vert[3].color.r = 0;
+  vert[3].color.g = 255;
+  vert[3].color.b = 0;
+  vert[3].color.a = 255;
+  vert[3].uv.x = 1.0f;
+  vert[3].uv.y = 1.0f;
 
   owl_thickness(2.0f);
 
@@ -134,7 +151,8 @@ static int owl_main(int argc, char *argv[]) {
     owl_clear();
 
     owl_color(owl_rgb(0xff, 0, 0xff));
-    owl_geometry(NULL, vert, 3, NULL, 0);
+    owl_geometry(hero, vert, sizeof(vert) / sizeof(*vert), indices,
+                 sizeof(indices) / sizeof(*indices));
 
     while (owl_event(&event)) {
       switch (event.type) {
