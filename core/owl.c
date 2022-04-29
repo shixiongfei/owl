@@ -19,39 +19,6 @@
 #include "owl_framerate.h"
 #include "owl_sound.h"
 
-#define OWL_TEXTURED_VERTEX_SHADER_SOURCE                              \
-  "#version 400\n\
-\
-in vec4 gpu_Vertex;\n\
-in vec2 gpu_TexCoord;\n\
-in vec4 gpu_Color;\n\
-uniform mat4 gpu_ModelViewProjectionMatrix;\n\
-\
-out vec4 color;\n\
-out vec2 texCoord;\n\
-\
-void main(void)\n\
-{\n\
-	color = gpu_Color;\n\
-	texCoord = vec2(gpu_TexCoord);\n\
-	gl_Position = gpu_ModelViewProjectionMatrix * gpu_Vertex;\n\
-}"
-
-#define OWL_UNTEXTURED_VERTEX_SHADER_SOURCE                            \
-  "#version 400\n\
-\
-in vec4 gpu_Vertex;\n\
-in vec4 gpu_Color;\n\
-uniform mat4 gpu_ModelViewProjectionMatrix;\n\
-\
-out vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-	color = gpu_Color;\n\
-	gl_Position = gpu_ModelViewProjectionMatrix * gpu_Vertex;\n\
-}"
-
 #define OWL_WINDOW_FLAGS SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI
 
 typedef struct owl_Window {
@@ -101,32 +68,6 @@ u64 owl_ticks(void) {
 
 void owl_sleep(u32 ms) { SDL_Delay(ms); }
 
-static void owl_enableGPU3D(GPU_Context *context) {
-  if (context->default_textured_shader_program > 0) {
-    GPU_DetachShader(context->default_textured_shader_program,
-                     context->default_textured_vertex_shader_id);
-    GPU_FreeShader(context->default_textured_vertex_shader_id);
-
-    context->default_textured_vertex_shader_id =
-        GPU_CompileShader(GPU_VERTEX_SHADER, OWL_TEXTURED_VERTEX_SHADER_SOURCE);
-    GPU_AttachShader(context->default_textured_shader_program,
-                     context->default_textured_vertex_shader_id);
-    GPU_LinkShaderProgram(context->default_textured_shader_program);
-  }
-
-  if (context->default_untextured_shader_program > 0) {
-    GPU_DetachShader(context->default_untextured_shader_program,
-                     context->default_untextured_vertex_shader_id);
-    GPU_FreeShader(context->default_untextured_vertex_shader_id);
-
-    context->default_untextured_vertex_shader_id = GPU_CompileShader(
-        GPU_VERTEX_SHADER, OWL_UNTEXTURED_VERTEX_SHADER_SOURCE);
-    GPU_AttachShader(context->default_untextured_shader_program,
-                     context->default_untextured_vertex_shader_id);
-    GPU_LinkShaderProgram(context->default_untextured_shader_program);
-  }
-}
-
 bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
   s32 x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
 
@@ -153,8 +94,6 @@ bool owl_init(s32 width, s32 height, const char *title, s32 flags) {
 
   if (!app->renderer)
     goto error;
-
-  owl_enableGPU3D(app->renderer->context);
 
   app->texture = GPU_CreateImage(width, height, GPU_FORMAT_RGBA);
 
@@ -509,119 +448,4 @@ void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
 void owl_present(void) {
   GPU_BlitRect(app->texture, NULL, app->renderer, NULL);
   GPU_Flip(app->renderer);
-}
-
-void owl_matrixMode3D(int matrix_mode) {
-  GPU_MatrixMode(app->target, matrix_mode);
-}
-
-void owl_matrixMultiply3D(const owl_Matrix4 *matrix) {
-  GPU_MultMatrix(matrix->m);
-}
-
-void owl_pushMatrix3D(void) { GPU_PushMatrix(); }
-
-void owl_popMatrix3D(void) { GPU_PopMatrix(); }
-
-void owl_loadMatrix3D(const owl_Matrix4 *matrix) { GPU_LoadMatrix(matrix->m); }
-
-void owl_loadIdentity3D(void) { GPU_LoadIdentity(); }
-
-void owl_ortho3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
-                      f32 z_far) {
-  GPU_Ortho(left, right, bottom, top, z_near, z_far);
-}
-
-void owl_frustum3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
-                        f32 z_far) {
-  GPU_Frustum(left, right, bottom, top, z_near, z_far);
-}
-
-void owl_perspective3D(f32 fovy, f32 aspect, f32 z_near, f32 z_far) {
-  GPU_Perspective(fovy, aspect, z_near, z_far);
-}
-
-void owl_lookAt3D(f32 eye_x, f32 eye_y, f32 eye_z, f32 target_x,
-                       f32 target_y, f32 target_z, f32 up_x, f32 up_y,
-                       f32 up_z) {
-  GPU_LookAt(eye_x, eye_y, eye_z, target_x, target_y, target_z, up_x, up_y,
-             up_z);
-}
-
-void owl_translate3D(f32 x, f32 y, f32 z) { GPU_Translate(x, y, z); }
-
-void owl_scale3D(f32 sx, f32 sy, f32 sz) { GPU_Scale(sx, sy, sz); }
-
-void owl_rotate3D(f32 degrees, f32 x, f32 y, f32 z) {
-  GPU_Rotate(degrees, x, y, z);
-}
-
-void owl_resetProjection3D(void) { GPU_ResetProjection(app->target); }
-
-void owl_modelViewProjection3D(owl_Matrix4 *result) {
-  GPU_GetModelViewProjection(result->m);
-}
-
-void owl_setMatrix3D(int matrix_mode, const owl_Matrix4 *matrix) {
-  if (matrix_mode == GPU_MODEL)
-    GPU_SetModel(matrix->m);
-  else if (matrix_mode == GPU_VIEW)
-    GPU_SetView(matrix->m);
-  else // if(matrix_mode == GPU_PROJECTION)
-    GPU_SetProjection(matrix->m);
-}
-
-owl_Matrix4 *owl_getMatrix3D(int matrix_mode) {
-  if (matrix_mode == GPU_MODEL)
-    return (owl_Matrix4 *)GPU_GetModel();
-  else if (matrix_mode == GPU_VIEW)
-    return (owl_Matrix4 *)GPU_GetView();
-  else // if(matrix_mode == GPU_PROJECTION)
-    return (owl_Matrix4 *)GPU_GetProjection();
-}
-
-owl_Matrix4 *owl_currentMatrix3D(void) {
-  return (owl_Matrix4 *)GPU_GetCurrentMatrix();
-}
-
-void owl_begin3D(void) {
-  GPU_FlushBlitBuffer();
-
-  owl_matrixMode3D(OWL_MODEL);
-  owl_pushMatrix3D();
-  owl_loadIdentity3D();
-  owl_matrixMode3D(OWL_VIEW);
-  owl_pushMatrix3D();
-  owl_loadIdentity3D();
-  owl_matrixMode3D(OWL_PROJECTION);
-  owl_pushMatrix3D();
-  owl_loadIdentity3D();
-}
-
-void owl_end3D(void) {
-  GPU_ResetRendererState();
-
-  owl_matrixMode3D(OWL_MODEL);
-  owl_popMatrix3D();
-  owl_matrixMode3D(OWL_VIEW);
-  owl_popMatrix3D();
-  owl_matrixMode3D(OWL_PROJECTION);
-  owl_popMatrix3D();
-}
-
-void owl_zbuffer(owl_Canvas *canvas) {
-  GPU_AddDepthBuffer(GPU_GetTarget(canvas));
-}
-
-void owl_depthTest(bool enable) {
-  GPU_SetDepthTest(app->target, enable);
-}
-
-void owl_depthFunction(s32 op) { GPU_SetDepthFunction(app->target, op); }
-
-void owl_geometry3D(owl_Canvas *texture, s32 type, const owl_Vertex3D *vertices,
-                    s32 num_vertices, const u16 *indices, s32 num_indices) {
-  GPU_PrimitiveBatchV(texture, app->target, type, num_vertices,
-                      (void *)vertices, num_indices, (u16 *)indices,
-                      GPU_BATCH_XYZ_ST_RGBA8);
 }

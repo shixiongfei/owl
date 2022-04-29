@@ -160,10 +160,6 @@ typedef struct owl_Point {
   f32 x, y;
 } owl_Point;
 
-typedef struct owl_Point3D {
-  f32 x, y, z;
-} owl_Point3D;
-
 typedef struct owl_Rect {
   f32 x, y;
   f32 w, h;
@@ -175,41 +171,15 @@ typedef struct owl_Vertex {
   owl_Pixel color;
 } owl_Vertex;
 
-typedef struct owl_Vertex3D {
-  owl_Point3D position;
-  owl_Point uv;
-  owl_Pixel color;
-} owl_Vertex3D;
-
 typedef struct owl_Vector2 {
   f64 x, y;
 } owl_Vector2;
-
-typedef struct owl_Vector3 {
-  f64 x, y, z;
-} owl_Vector3;
 
 typedef struct owl_Matrix {
   f64 a, c, tx;
   f64 b, d, ty;
   /*  0, 0, 1 */
 } owl_Matrix;
-
-typedef union owl_Matrix4 {
-  /**
-   * | e00 e01 e02 e03 |
-   * | e10 e11 e12 e13 |
-   * | e20 e21 e22 e23 |
-   * | e30 e31 e32 e33 |
-   **/
-  struct {
-    f32 e00, e10, e20, e30;
-    f32 e01, e11, e21, e31;
-    f32 e02, e12, e22, e32;
-    f32 e03, e13, e23, e33;
-  };
-  f32 m[16];
-} owl_Matrix4;
 
 typedef u32 owl_Audio;
 typedef struct GPU_Image owl_Canvas;
@@ -480,43 +450,6 @@ OWL_API void owl_blit(owl_Canvas *canvas, const owl_Rect *srcrect,
                       const owl_Rect *dstrect, f32 degrees,
                       const owl_Point *center, u8 flip);
 OWL_API void owl_present(void);
-
-OWL_API void owl_matrixMode3D(int matrix_mode);
-OWL_API void owl_matrixMultiply3D(const owl_Matrix4 *matrix);
-
-OWL_API void owl_pushMatrix3D(void);
-OWL_API void owl_popMatrix3D(void);
-OWL_API void owl_loadMatrix3D(const owl_Matrix4 *matrix);
-OWL_API void owl_loadIdentity3D(void);
-
-OWL_API void owl_ortho3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
-                         f32 z_far);
-OWL_API void owl_frustum3D(f32 left, f32 right, f32 bottom, f32 top, f32 z_near,
-                           f32 z_far);
-OWL_API void owl_perspective3D(f32 fovy, f32 aspect, f32 z_near, f32 z_far);
-OWL_API void owl_lookAt3D(f32 eye_x, f32 eye_y, f32 eye_z, f32 target_x,
-                          f32 target_y, f32 target_z, f32 up_x, f32 up_y,
-                          f32 up_z);
-OWL_API void owl_translate3D(f32 x, f32 y, f32 z);
-OWL_API void owl_scale3D(f32 sx, f32 sy, f32 sz);
-OWL_API void owl_rotate3D(f32 degrees, f32 x, f32 y, f32 z);
-OWL_API void owl_resetProjection3D(void);
-
-OWL_API void owl_modelViewProjection3D(owl_Matrix4 *result);
-OWL_API void owl_setMatrix3D(int matrix_mode, const owl_Matrix4 *matrix);
-OWL_API owl_Matrix4 *owl_getMatrix3D(int matrix_mode);
-OWL_API owl_Matrix4 *owl_currentMatrix3D(void);
-
-OWL_API void owl_begin3D(void);
-OWL_API void owl_end3D(void);
-
-OWL_API void owl_zbuffer(owl_Canvas *canvas);
-OWL_API void owl_depthTest(bool enable);
-OWL_API void owl_depthFunction(s32 op);
-
-OWL_API void owl_geometry3D(owl_Canvas *texture, s32 type,
-                            const owl_Vertex3D *vertices, s32 num_vertices,
-                            const u16 *indices, s32 num_indices);
 
 OWL_API bool owl_loadFont(const char *name, const char *filename);
 OWL_API bool owl_font(const char *name, s32 size);
