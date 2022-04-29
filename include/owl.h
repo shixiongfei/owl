@@ -98,15 +98,6 @@
 #define OWL_VIEW 1
 #define OWL_PROJECTION 2
 
-#define OWL_NEVER 0x0200
-#define OWL_LESS 0x0201
-#define OWL_EQUAL 0x0202
-#define OWL_LEQUAL 0x0203
-#define OWL_GREATER 0x0204
-#define OWL_NOTEQUAL 0x0205
-#define OWL_GEQUAL 0x0206
-#define OWL_ALWAYS 0x0207
-
 #define OWL_AUDIO_U8 0
 #define OWL_AUDIO_S8 1
 #define OWL_AUDIO_U16 2
