@@ -381,11 +381,11 @@ void owl_fillSector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
                    end_angle, OWL_COLOR);
 }
 
-void owl_tri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3) {
+void owl_trigon(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3) {
   GPU_Tri(app->target, x1, y1, x2, y2, x3, y3, OWL_COLOR);
 }
 
-void owl_fillTri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3) {
+void owl_fillTrigon(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3) {
   GPU_TriFilled(app->target, x1, y1, x2, y2, x3, y3, OWL_COLOR);
 }
 

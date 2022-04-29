@@ -422,8 +422,8 @@ OWL_API void owl_sector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
 OWL_API void owl_fillSector(f32 x, f32 y, f32 inner_radius, f32 outer_radius,
                             f32 start_angle, f32 end_angle);
 
-OWL_API void owl_tri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3);
-OWL_API void owl_fillTri(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3);
+OWL_API void owl_trigon(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3);
+OWL_API void owl_fillTrigon(f32 x1, f32 y1, f32 x2, f32 y2, f32 x3, f32 y3);
 
 OWL_API void owl_rectRound(f32 x, f32 y, f32 w, f32 h, f32 radius);
 OWL_API void owl_fillRectRound(f32 x, f32 y, f32 w, f32 h, f32 radius);
