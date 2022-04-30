@@ -37,9 +37,6 @@ workspace ( "owl" )
     os.remove("owlcore.vcxproj")
     os.remove("owlcore.vcxproj.filters")
     os.remove("owlcore.vcxproj.user")
-    os.remove("owlvm.vcxproj")
-    os.remove("owlvm.vcxproj.filters")
-    os.remove("owlvm.vcxproj.user")
     os.remove("owl.vcxproj")
     os.remove("owl.vcxproj.filters")
     os.remove("owl.vcxproj.user")
@@ -47,7 +44,6 @@ workspace ( "owl" )
     os.remove("SDL2main.make")
     os.remove("SDL_gpu.make")
     os.remove("owlcore.make")
-    os.remove("owlvm.make")
     os.remove("owl.make")
     os.remove("Makefile")
     return
@@ -308,42 +304,6 @@ workspace ( "owl" )
 
 
   -- A project defines one build target
-  project ( "owlvm" )
-    kind ( "SharedLib" )
-    language ( "C" )
-    files { "./vm/**.h", "./vm/**.c",
-            "./include/owlvm.h",
-            "./3rd/libbf/cutils.h", "./3rd/libbf/cutils.c",
-            "./3rd/libbf/libbf.h", "./3rd/libbf/libbf.c" }
-    includedirs { "./include", "./3rd/libbf" }
-    libdirs { "./bin" }
-    objdir ( "./objs" )
-    targetdir ( "./bin" )
-    targetname ( "OwlVM" )
-    defines { "_UNICODE", "OWL_BUILD_DLL" }
-    staticruntime "On"
-
-    filter ( "configurations:Release" )
-      optimize "On"
-      defines { "NDEBUG", "_NDEBUG" }
-
-    filter ( "configurations:Debug" )
-      symbols "On"
-      defines { "DEBUG", "_DEBUG" }
-
-    filter ( "action:vs*" )
-      defines { "WIN32", "_WIN32", "_WINDOWS", "_CRT_SECURE_NO_WARNINGS",
-                "_CRT_SECURE_NO_DEPRECATE", "_CRT_NONSTDC_NO_DEPRECATE" }
-
-    filter ( "action:gmake" )
-      warnings  "Default" --"Extra"
-      linkoptions { "-rpath @executable_path", "-rpath @loader_path" }
-
-    filter { "action:gmake", "system:macosx" }
-      defines { "__APPLE__", "__MACH__", "__MRC__", "macintosh" }
-
-
-  -- A project defines one build target
   project ( "owl" )
     kind ( "WindowedApp" )
     language ( "C" )
@@ -358,7 +318,7 @@ workspace ( "owl" )
     libdirs { "./bin" }
     objdir ( "./objs" )
     targetdir ( "./bin" )
-    links { "SDL2main", "OwlCore", "OwlVM" }
+    links { "SDL2main", "OwlCore" }
     defines { "_UNICODE", "ACTOR_STATIC", "NIO_STATIC" }
     staticruntime "On"
 

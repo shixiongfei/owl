@@ -1,3 +1,3 @@
 # Owl
 
-Owl is a Smalltalk dialect used for game engine.
+Owl is a 2D game engine

@@ -19,7 +19,6 @@
 #include "actor.h"
 #include "nio4c.h"
 #include "owl.h"
-#include "owlvm.h"
 
 typedef struct Args {
   int retval;
@@ -58,8 +57,7 @@ static int owl_main(int argc, char *argv[]) {
 
   owl_matrixSetTransRotate(&m, c.x, c.y, owl_radians(1.0f));
 
-  sprintf(title, "Think Pixels | Owl Core: %s VM: %s",
-          owl_version(NULL, NULL, NULL), owlvm_version(NULL, NULL, NULL));
+  sprintf(title, "Think Pixels | Owl Core: %s", owl_version(NULL, NULL, NULL));
 
   if (!owl_init(SCREEN_W, SCREEN_H, title, 0))
     return -1;
